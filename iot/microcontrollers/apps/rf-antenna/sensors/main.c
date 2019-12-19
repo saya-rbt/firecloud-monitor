@@ -47,9 +47,10 @@
 
 
 #define MODULE_VERSION  0x01
-#define MODULE_NAME "Firecloud Monitor - RF antenna"
-// The address is arbitrary and set at compile time through Make macros
-// #define MODULE_ADDRESS  0x1E // TODO: change it to a macro
+#define MODULE_NAME "Firecloud Monitor - Sensors"
+// The address is arbitrary and will be set at compile time through Make macros
+// in a later version, hopefully
+#define MODULE_ADDRESS  0x05 // TODO: change it to a macro
 
 #define SELECTED_FREQ FREQ_SEL_48MHz
 

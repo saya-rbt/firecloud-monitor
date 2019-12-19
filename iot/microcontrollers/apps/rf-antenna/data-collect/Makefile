@@ -12,18 +12,10 @@ else
 	LANG = C
 endif
 
-all:
-	@make -C ../.. ${PRINT_DIRECTORY} $@
-# .PHONY:
+.PHONY: $(NAME).bin
+$(NAME).bin:
+	@make -C ../../.. ${PRINT_DIRECTORY} NAME=$(NAME) MODULE=$(MODULE) apps/$(MODULE)/$(NAME)/$@
 
-# $(NAME).bin:
-# 	@make -C ../.. ${PRINT_DIRECTORY} NAME=$(NAME) apps/$(NAME)/$@
-
-# emergency:
-
-# sensors:
-# 	@make -C ../.. ${PRINT_DIRECTORY} $@
-# 
-# clean mrproper:
-# 	@make -C ../.. ${PRINT_DIRECTORY} $@
+clean mrproper:
+	@make -C ../../.. ${PRINT_DIRECTORY} $@
 
