@@ -1,6 +1,6 @@
 # Makefile for LPC122x micro-controller based boards
 
-TARGET_DIR = apps/$(NAME)
+TARGET_DIR = apps/$(MODULE)/$(NAME)
 
 # If you use another of the LPC122x micro-controllers, copy the lpc_link_lpc1224.ld file
 # to match you LPC micro-controller model and modify the memory sizes definitions at the
@@ -25,15 +25,10 @@ LDFLAGS = -static $(LD_DEBUG) -nostartfiles -nostdlib -Tlpc_link_$(LPC).ld \
 		  -Wl,-Map=$(TARGET_DIR)/lpc_map_$(LPC).map
 
 
-APPS = $(subst apps/,,$(wildcard apps/*))
-# APPS = apps/rf-antenna/emergency apps/rf-antenna/sensors
+APPS = $(subst apps/,,$(wildcard apps/*/*))
 
 .PHONY: all $(APPS)
-# .PHONY:
-# 	@make emergency
-# 	@make sensors
 all: $(APPS)
-# all:
 
 INCLUDES = include/
 TARGET_INCLUDES = $(TARGET_DIR)/
@@ -46,6 +41,7 @@ C_SRC += $(wildcard lib/protocols/*/*.c)
 A_SRC = $(wildcard */*.s)
 A_SRC += $(wildcard lib/*/*.s)
 A_SRC += $(wildcard lib/protocols/*/*.s)
+
 
 OBJS = ${C_SRC:%.c=${OBJDIR}/%.o} ${A_SRC:%.s=${OBJDIR}/%.o}
 DEPS = ${OBJS:%.o=$(OBJDIR)/%.d}
@@ -60,7 +56,7 @@ NAME_DEPS = ${NAME_OBJS:%.o=$(OBJDIR)/%.d}
 .SECONDARY: $(OBJS) $(NAME_OBJS)
 .PRECIOUS: %.elf
 %.elf: $(OBJS) $(NAME_OBJS)
-	@echo "Linking $@ ..."
+	@echo "Linking $(MODULE)/$(NAME) ..."
 	@$(CC) $(LDFLAGS) $(OBJS) $(NAME_OBJS) -o $@
 
 %.bin: %.elf
@@ -82,25 +78,15 @@ ${OBJDIR}/%.o: %.s
 
 
 $(APPS):
-# 	@make --no-print-directory NAME=$(shell basename $@) apps/$(shell basename $@)/$(shell basename $@).bin
-	@make emergency
-	@make sensors
+	@make --no-print-directory MODULE=$(shell dirname $@) NAME=$(shell basename $@) apps/$(shell dirname $@)/$(shell basename $@)/$(shell basename $@).bin
 
 all_apps: $(APPS)
-
-emergency: $(OBJS)
-	@echo "-- building" $@
-	@make --no-print-directory CFLAGS+=-DMODULE_ADDRESS=0x1E NAME=rf-antenna apps/rf-antenna/emergency.bin
-
-sensors: $(OBJS)
-	@echo "-- building" $@
-	@make --no-print-directory CFLAGS+=-DMODULE_ADDRESS=0x05 NAME=rf-antenna apps/rf-antenna/sensors.bin
 
 clean:
 	rm -rf $(OBJDIR)
 
 mrproper: clean
-	rm -f apps/*/*.bin apps/*/*.elf apps/*/*.map
+	rm -f apps/*/*/*.bin apps/*/*/*.elf apps/*/*/*.map
 
 
 # Some notes :
