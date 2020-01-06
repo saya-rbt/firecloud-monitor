@@ -294,6 +294,8 @@ void handle_uart_cmd(uint8_t c)
 
 	if ((c == '\n') || (c == '\r') || (cc_ptr>=48)) {
 
+		cc_tx_buff[cc_ptr++] = '\0';
+		
 		// Setting the "please send me" flag
 		cc_tx = 1;
 
@@ -343,7 +345,7 @@ void send_on_rf(void)
 	// ret = cc1101_send_packet(cc_tx_data, (sizeof(packet_t) + 2));
 
 	// Only here for tests: echo what we send
-	uprintf(UART0, "%s", cc_tx_buff);
+	uprintf(UART0, "%s\n\r", cc_tx_buff);
 
 	gpio_clear(status_led_red);
 	gpio_set(status_led_green);
@@ -390,8 +392,8 @@ int main(void)
 		if (cc_tx == 1) 
 		{
 			send_on_rf();
-			gpio_clear(status_led_green);
-			gpio_set(status_led_red);
+			// gpio_clear(status_led_green);
+			// gpio_set(status_led_red);
 			cc_tx = 0;
 		}
 
