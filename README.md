@@ -48,12 +48,12 @@ And here is the table of the current message types (can be expanded later):
 
 |   Value   |                  Message type                  |
 |:---------:|:----------------------------------------------:|
-|   0x00    |          HELLO (Alice sends her key)           |
-|   0x01    |             THERE (Bob sends his)              |
-|   0x02    |                      DATA                      |
-|   0x03    |                      ACK                       |
-|   0x04    | NACK (transmission error, send the data again) |
-| 0x05-0xFF |       Undefined, reserved for future use       |
+|   0x01    |          HELLO (Alice sends her key)           |
+|   0x02    |             THERE (Bob sends his)              |
+|   0x03    |                      DATA                      |
+|   0x04    |                      ACK                       |
+|   0x05    | NACK (transmission error, send the data again) |
+| 0x06-0xFF |       Undefined, reserved for future use       |
 
 ## The team
 

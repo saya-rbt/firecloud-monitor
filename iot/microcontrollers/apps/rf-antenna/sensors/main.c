@@ -1,7 +1,7 @@
 /****************************************************************************
- * rf-sub1ghz/receptor/main.c
+ * Firecloud Monitor: sensors microcontroller
  *
- * Gateway microcontroller between the sensors one and the Raspberry Pi
+ * Gateway microcontroller between the simulator and the emergency platform
  *
  * Copyright 2019 sayabiws@gmail.com
  *
@@ -212,6 +212,11 @@ unsigned char checksum(unsigned char message[], int nBytes)
 // Function called when data comes from the radio
 void handle_rf_rx_data(void)
 {
+	// We use the led to signal we're handling the data.
+	// However, it barely blinks so it's barely noticeable, but still.
+	gpio_clear(status_led_green);
+	gpio_set(status_led_red);
+
 	uint8_t data[RF_BUFF_LEN];
 	uint8_t status = 0;
 
@@ -231,11 +236,6 @@ void handle_rf_rx_data(void)
 	// Address verification
 	if(data[1] == MODULE_ADDRESS)
 	{
-		// We use the led to signal we're handling the data.
-		// However, it barely blinks so it's barely noticeable, but still.
-		gpio_clear(status_led_green);
-		gpio_set(status_led_red);
-
 		// Copy the received data in our own struct so we can handle it better
 		memcpy(&received_payload, &data[2], sizeof(packet_t));
 
@@ -249,7 +249,7 @@ void handle_rf_rx_data(void)
 				received_payload.message_type,
 				received_payload.data);
 		else
-			uprintf(UART0, "%x;%x;%x;ERROR: incorrect checksum. Ask for the data again.",
+			uprintf(UART0, "%x;%x;%x;ERROR: incorrect checksum. Ask for the data again.\n\r",
 				received_payload.source,
 				received_payload.checksum,
 				received_payload.message_type);
@@ -274,6 +274,9 @@ void handle_uart_cmd(uint8_t c)
 #ifdef DEBUG
 	uprintf(UART0, "Received command : %c, buffer size: %d.\n\r",c,cc_ptr);
 #endif
+	// Using the leds again to signal we're ready to send
+	gpio_clear(status_led_green);
+	gpio_set(status_led_red);
 
 	// Data
 	// Most of the data is handled in the main loop, so we just use it as it is
@@ -286,10 +289,7 @@ void handle_uart_cmd(uint8_t c)
 		cc_ptr = 0;
 	}
 	
-	if ((c == '\n') || (c == '\r') || (cc_ptr>=63)) {
-		// Using the leds again to signal we're ready to send
-		gpio_clear(status_led_green);
-		gpio_set(status_led_red);
+	if ((c == '\n') || (c == '\r') || (cc_ptr>=49)) {
 
 		// Setting the "please send me" flag
 		cc_tx = 1;
@@ -305,6 +305,9 @@ void handle_uart_cmd(uint8_t c)
 
 void send_on_rf(void)
 {
+	gpio_clear(status_led_green);
+	gpio_set(status_led_red);
+	// chenillard(250);
 	uint8_t cc_tx_data[sizeof(packet_t) + 2];
 	int ret = 0;
 	packet_t tbs_packet;
@@ -312,7 +315,7 @@ void send_on_rf(void)
 	/* Create a local copy */
 	unsigned char packet_data[47];
 	memcpy((char*)&packet_data, (char*)&(cc_tx_buff[2]), 47);
-	tbs_packet.source = MODULE_ADDRESS; // Address is set at compile time
+	tbs_packet.source = MODULE_ADDRESS;
 	tbs_packet.checksum = checksum(packet_data, 47);
 	tbs_packet.message_type = cc_tx_buff[1];
 	memcpy((char*)&(tbs_packet.data), &packet_data, 47);
@@ -326,19 +329,26 @@ void send_on_rf(void)
 	cc_tx_data[0] = sizeof(packet_t) + 1;
 	// Destination
 	// We don't hardcode the destination so it can reply to anyone
-	cc_tx_data[1] = cc_tx_buff[0];
+	cc_tx_data[1] = cc_tx_buff[0]; // TODO: UNHARDCODE IT
 
 	/* Send */
 	if (cc1101_tx_fifo_state() != 0) {
 		cc1101_flush_tx_fifo();
 	}
+
+	// Resetting the leds
 	ret = cc1101_send_packet(cc_tx_data, (sizeof(packet_t) + 2));
-	if(ret < 0)
+	if(ret <= 0)
 	{
 		// Since we don't use UART to signal problems and we don't have a screen
 		// here either, we're using what we can, aka the LEDs again.
 		gpio_clear(status_led_green);
 		gpio_set(status_led_red);
+	}
+	else
+	{
+		gpio_clear(status_led_red);
+		gpio_set(status_led_green);
 	}
 
 #ifdef DEBUG
@@ -369,6 +379,8 @@ int main(void)
 		if (cc_tx == 1) 
 		{
 			send_on_rf();
+			gpio_clear(status_led_green);
+			gpio_set(status_led_red);
 			cc_tx = 0;
 		}
 
