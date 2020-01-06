@@ -289,7 +289,10 @@ void handle_uart_cmd(uint8_t c)
 		cc_ptr = 0;
 	}
 	
-	if ((c == '\n') || (c == '\r') || (cc_ptr>=49)) {
+	// gpio_clear(status_led_red);
+	// gpio_set(status_led_green);
+
+	if ((c == '\n') || (c == '\r') || (cc_ptr>=48)) {
 
 		// Setting the "please send me" flag
 		cc_tx = 1;
@@ -309,7 +312,7 @@ void send_on_rf(void)
 	gpio_set(status_led_red);
 	// chenillard(250);
 	uint8_t cc_tx_data[sizeof(packet_t) + 2];
-	int ret = 0;
+	// int ret = 0;
 	packet_t tbs_packet;
 
 	/* Create a local copy */
@@ -336,20 +339,28 @@ void send_on_rf(void)
 		cc1101_flush_tx_fifo();
 	}
 
+	// Sending the packet
+	// ret = cc1101_send_packet(cc_tx_data, (sizeof(packet_t) + 2));
+
+	// Only here for tests: echo what we send
+	uprintf(UART0, "%s", cc_tx_buff);
+
+	gpio_clear(status_led_red);
+	gpio_set(status_led_green);
+
 	// Resetting the leds
-	ret = cc1101_send_packet(cc_tx_data, (sizeof(packet_t) + 2));
-	if(ret <= 0)
-	{
-		// Since we don't use UART to signal problems and we don't have a screen
-		// here either, we're using what we can, aka the LEDs again.
-		gpio_clear(status_led_green);
-		gpio_set(status_led_red);
-	}
-	else
-	{
-		gpio_clear(status_led_red);
-		gpio_set(status_led_green);
-	}
+	// if(ret <= 0)
+	// {
+	// 	// Since we don't use UART to signal problems and we don't have a screen
+	// 	// here either, we're using what we can, aka the LEDs again.
+	// 	gpio_clear(status_led_green);
+	// 	gpio_set(status_led_red);
+	// }
+	// else
+	// {
+	// 	gpio_clear(status_led_red);
+	// 	gpio_set(status_led_green);
+	// }
 
 #ifdef DEBUG
 	uprintf(UART0, "Tx ret: %d\n\r", ret);

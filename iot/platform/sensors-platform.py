@@ -70,6 +70,7 @@ def unhex(hex):
 def initKeyExchange(sk_sensors, ser):
 	pk_sensors = sk_sensors.public_key
 	print("Sending our public key...")
+	print(DATA_COLLECT_DEST_ADDR + message_types["HELLO"] + pk_sensors.encode(Base64Encoder).decode())
 	sent_pk = unhex(DATA_COLLECT_DEST_ADDR) + unhex(message_types["HELLO"]) + pk_sensors.encode(Base64Encoder).decode() + "\n\r"
 	print(sent_pk)
 	print(len(sent_pk.encode()))
