@@ -38,3 +38,11 @@ Insertion du feu dans la base lors de la reception par l'api.
 ##Attribution des effectifs
 
 Le manager récupère l'état des feux dans la base. Les feux sont ordonnés par puissance, les plus importants étant traités en priorité (à moduler plus tard pour optimiser l'extinction des feux)
+
+#Besoins API 
+
+Récupérer tous les véhicules disponibles d'une station
+Récupérer tous les feux actifs 
+Récupérer tous les véhicules d'un feu 
+Récupérer tous les feux d'un capteur
+Récupérer tous les capteurs actifs 

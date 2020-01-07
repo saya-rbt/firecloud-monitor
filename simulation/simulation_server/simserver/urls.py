@@ -22,6 +22,8 @@ router.register(r'users', views.UserViewSet)
 router.register(r'groups', views.GroupViewSet)
 router.register(r'stations', views.StationViewSet)
 router.register(r'trucks', views.TruckViewSet)
+router.register(r'fires', views.FireViewSet)
+router.register(r'sensors', views.SensorViewSet)
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
