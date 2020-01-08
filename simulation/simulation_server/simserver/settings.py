@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'simserver.api',
+    'mod_wsgi.server',
 ]
 
 MIDDLEWARE = [
