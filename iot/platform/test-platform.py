@@ -73,14 +73,14 @@ def keyEcho(sk_sensors, ser):
 	# print(DATA_COLLECT_DEST_ADDR + message_types["HELLO"] + pk_sensors.encode(Base64Encoder))
 	
 	# msg_to_echo = byteify(DATA_COLLECT_DEST_ADDR) + byteify(message_types["HELLO"]) + pk_sensors.encode(Base64Encoder) + "\n\r".encode()
-	msg_to_echo = DATA_COLLECT_DEST_ADDR + message_types["HELLO"] + pk_sensors.encode(Base64Encoder) + "\n\r".encode()
+	msg_to_echo = DATA_COLLECT_DEST_ADDR + message_types["HELLO"] + pk_sensors.encode(Base64Encoder) + "\n".encode()
 	
 	print(msg_to_echo)
 	print(len(msg_to_echo))
 	
 	ser.write(msg_to_echo)
 	print("Waiting for the microcontroller echo...")
-	echo = ser.read_until("\n\r") # TODO: handle flags
+	echo = ser.readline() # TODO: handle flags
 	
 	print("Echo received!")
 	print(echo)

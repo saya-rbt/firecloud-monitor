@@ -1,5 +1,5 @@
 /****************************************************************************
- * Firecloud Monitor: Data Collect microcontroller
+ * Firecloud Monitor: data collect microcontroller
  *
  * Gateway microcontroller between the sensors one and the emergency platform
  *
@@ -216,7 +216,6 @@ void handle_rf_rx_data(void)
 	// However, it barely blinks so it's barely noticeable, but still.
 	gpio_clear(status_led_green);
 	gpio_set(status_led_red);
-	// uprintf(UART0, "DEBUG: Received data");
 
 	uint8_t data[RF_BUFF_LEN];
 	uint8_t status = 0;
@@ -244,13 +243,13 @@ void handle_rf_rx_data(void)
 		// be handled on the Raspberry Pi and then to the app.
 		// We only do that if the checksum is correct though.
 		if(checksum(received_payload.data, 47) == received_payload.checksum)
-			uprintf(UART0, "%x;%x;%x;%s\n\r", 
+			uprintf(UART0, "%x;%x;%x;%s", 
 				received_payload.source,
 				received_payload.checksum,
 				received_payload.message_type,
 				received_payload.data);
 		else
-			uprintf(UART0, "%x;%x;%x;ERROR: incorrect checksum. Ask for the data again.\n\r",
+			uprintf(UART0, "%x;%x;%x;ERROR : wrong checksum. Ask for the data again.",
 				received_payload.source,
 				received_payload.checksum,
 				received_payload.message_type);
@@ -269,7 +268,6 @@ void handle_rf_rx_data(void)
 static volatile uint32_t cc_tx = 0;
 static volatile uint8_t cc_tx_buff[RF_BUFF_LEN];
 static volatile uint8_t cc_ptr = 0;
-static volatile unsigned char cc_checksum = 0;
 void handle_uart_cmd(uint8_t c)
 {
 #ifdef DEBUG
@@ -290,8 +288,13 @@ void handle_uart_cmd(uint8_t c)
 		cc_ptr = 0;
 	}
 	
-	if ((c == '\n') || (c == '\r') || (cc_ptr>=63)) {
+	// gpio_clear(status_led_red);
+	// gpio_set(status_led_green);
 
+	if (/*(c == '\n') || (c == '\r') || */(cc_ptr>=49)) {
+
+		cc_tx_buff[cc_ptr++] = '\0';
+		
 		// Setting the "please send me" flag
 		cc_tx = 1;
 
@@ -306,6 +309,9 @@ void handle_uart_cmd(uint8_t c)
 
 void send_on_rf(void)
 {
+	gpio_clear(status_led_green);
+	gpio_set(status_led_red);
+	// chenillard(250);
 	uint8_t cc_tx_data[sizeof(packet_t) + 2];
 	int ret = 0;
 	packet_t tbs_packet;
@@ -327,19 +333,34 @@ void send_on_rf(void)
 	cc_tx_data[0] = sizeof(packet_t) + 1;
 	// Destination
 	// We don't hardcode the destination so it can reply to anyone
-	cc_tx_data[1] = cc_tx_buff[0]; // TODO:UNHARDCODE IT
+	cc_tx_data[1] = cc_tx_buff[0]; // TODO: UNHARDCODE IT
 
 	/* Send */
 	if (cc1101_tx_fifo_state() != 0) {
 		cc1101_flush_tx_fifo();
 	}
+
+	// Sending the packet
 	ret = cc1101_send_packet(cc_tx_data, (sizeof(packet_t) + 2));
-	if(ret <= 0)
+
+	// Only here for tests: echo what we send
+	// uprintf(UART0, "%s\n\r", cc_tx_buff);
+
+	gpio_clear(status_led_red);
+	gpio_set(status_led_green);
+
+	// Resetting the leds
+	if(ret < 0)
 	{
 		// Since we don't use UART to signal problems and we don't have a screen
 		// here either, we're using what we can, aka the LEDs again.
 		gpio_clear(status_led_green);
 		gpio_set(status_led_red);
+	}
+	else
+	{
+		gpio_clear(status_led_red);
+		gpio_set(status_led_green);
 	}
 
 #ifdef DEBUG
@@ -361,7 +382,6 @@ int main(void)
 
 	// When everything is up and running, we use the green LED
 	gpio_set(status_led_green);
-	// uprintf(UART0, "DEBUG: started");
 
 	while (1)
 	{
@@ -371,14 +391,19 @@ int main(void)
 		if (cc_tx == 1) 
 		{
 			send_on_rf();
+			// gpio_clear(status_led_green);
+			// gpio_set(status_led_red);
 			cc_tx = 0;
 		}
 
-		/* Do not leave radio in an unknown or unwated state */
+		/* Do not leave radio in an unknown or unwanted state */
 		do
 		{
 			status = (cc1101_read_status() & CC1101_STATE_MASK);
 		} while (status == CC1101_STATE_TX);
+
+		// gpio_clear(status_led_green);
+		// gpio_set(status_led_red);
 
 		if (status != CC1101_STATE_RX) {
 			static uint8_t loop = 0;
@@ -393,15 +418,16 @@ int main(void)
 				loop = 0;
 			}
 		}
-		// chenillard(250);
+
+
 		if (check_rx == 1)
 		{
-			// Try broadcast
+			handle_rf_rx_data();
 			gpio_clear(status_led_green);
 			gpio_set(status_led_red);
-			handle_rf_rx_data();
 			check_rx = 0;
 		}
+		chenillard(250);
 	}
 	return 0;
 }
