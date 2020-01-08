@@ -19,7 +19,7 @@ When the fire is extinguished, the *Emergency Manager* will end the mission and 
 
 ## The network infrastructure
 
-![The topology](https://github.com/sayabiws/firecloud-monitor/blob/master/network/network-topology.png)
+![The topology](https://github.com/sayabiws/firecloud-monitor/blob/master/docs/diagrams/network-topology.png)
 
 Every service is self-hosted in the DMZ in the datacenter we're creating with Docker.
 
