@@ -19,7 +19,7 @@ When the fire is extinguished, the *Emergency Manager* will end the mission and 
 
 ## The network infrastructure
 
-![The topology](https://github.com/sayabiws/firecloud-monitor/blob/master/network/network-topology.png)
+![The topology](https://github.com/sayabiws/firecloud-monitor/blob/master/docs/diagrams/network-topology.png)
 
 Every service is self-hosted in the DMZ in the datacenter we're creating with Docker.
 
@@ -37,19 +37,18 @@ Everything in blue is server-side, everything in orange is client-side.
 
 The IoT protocol is based on UDP, though it's been slightly modified to handle a "*message type*" flag as well as use 1-byte addresses instead of IP addresses. A whole byte isn't necessary, but allows for evolution. Here is a representation of a packet:
 
-| Byte |      0       |      1      |
-|:----:|:------------:|:-----------:|
-|  0   |    Length    | Destination |
-|  2   |    Source    |  Checksum   |
-|  4   | Message type |    Data     |
-| 6-62 | Data (cont.) |     ...     |
+| Byte |   0    |      1       |
+|:----:|:------:|:------------:|
+|  0   | Length | Destination  |
+|  2   | Source | Message type |
+| 4-62 |  Data  | Data (cont.) |
 
 And here is the table of the current message types (can be expanded later):
 
 |   Value   |                  Message type                  |
 |:---------:|:----------------------------------------------:|
-|   0x01    |          HELLO (Alice sends her key)           |
-|   0x02    |             THERE (Bob sends his)              |
+|   0x01    |     HELLO (Sensors warn of their presence)     |
+|   0x02    |          THERE (Data collect respond)          |
 |   0x03    |                      DATA                      |
 |   0x04    |                      ACK                       |
 |   0x05    | NACK (transmission error, send the data again) |

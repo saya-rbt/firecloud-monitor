@@ -5,7 +5,7 @@
 # Encryption
 import nacl.utils
 from nacl.encoding import Base64Encoder
-from nacl.public import PrivateKey, Box
+from nacl.public import PrivateKey, Box, PublicKey
 
 # Serial
 import serial
@@ -28,8 +28,8 @@ ser = serial.Serial()
 
 # Communication variables
 # ALL THOSE ARE HEX VALUES STORED IN STRINGS
-SENSORS_DEST_ADDR = "1E"
-message_types = {"HELLO": "01", "THERE": "02", "DATA": "03", "ACK": "04", "NACK":"05"}
+SENSORS_DEST_ADDR = b"\x05"
+message_types = {"HELLO": b"\x01", "THERE": b"\x02", "DATA": b"\x03", "ACK": b"\x04", "NACK":b"\x05"}
 
 ## Actual code
 
@@ -60,21 +60,42 @@ def initUART():
 def closeUART():
 	ser.close()
 
-def sendUARTMessage(msg):
-	ser.write(msg.encode())
-
 # Encryption functions
 def unhex(hex):
 	return bytes.fromhex(hex).decode("utf-8")
 
-def initKeyExchange(sk_sensors, ser):
-	pk_sensors = sk_sensors.public_key
-	sendUARTMessage(unhex(SENSORS_DEST_ADDR) + unhex(message_types["HELLO"]) + pk_sensors.encode(Base64Encoder).decode())
-	pk_data_collect = ser.read_until("\n\r")
-	print(pk_data_collect)
-	box = Box(sk_sensors, pk_data_collect)
-	return box
 
+def pad(msg):
+	if len(msg) < 49:
+		for i in range(49-len(msg)):
+			msg += b"\xff"
+	return msg
+
+def initKeyExchange(sk_data_collect, ser):
+	pk_data_collect = sk_data_collect.public_key
+	print("Waiting for key exchange...")
+	input_ser = ser.read(54)
+	# print(input_ser)
+	# print(len(input_ser))
+	print("Sensors public key received!")
+	pk_sensors = input_ser[7:39]
+	print(pk_sensors)
+	flags = input_ser[:6].decode().split(";")
+	# pk_sensors = a.split(";")[3].rstrip()
+	print("Replying with our public key...")
+	# print(pk_sensors)
+	# print(len(pk_sensors))
+	sent_pk = SENSORS_DEST_ADDR + message_types["THERE"] + pk_data_collect.encode()
+	print(pk_data_collect)
+	sent_pk_padded = pad(sent_pk)
+	# print(sent_pk_padded)
+	# print(len(sent_pk_padded))
+	ser.write(sent_pk_padded)
+
+	box = Box(sk_data_collect, nacl.public.PublicKey(pk_sensors))
+	print("test:")
+	print(box.encrypt(b"connard"))
+	return box
 
 	# print(pk_sensors.encode(Base64Encoder).decode())
 	# print(unhex(SENSORS_DEST_ADDR))
@@ -92,29 +113,63 @@ if __name__ == "__main__":
 	
 	# print("Initiating key exchange...")
 	initUART()
-	print("Waiting for key exchange...")
-	pk_sensors = ser.read_until("\n\r").split(";")[3]
-	print("Sensors public key received!")
-	print(pk_sensors)
-	data_collect_box(sk_data_collect, pk_sensors)
+	
+	data_collect_box = initKeyExchange(sk_data_collect, ser)
+
+	data = ""
+	while data != "stop":
+		print("Waiting for data to be sent...")
+		rcv_packet = ser.read(54)
+		print("Data received!")
+		# print(rcv_packet)
+		rcv_data = rcv_packet[7:]
+		print(rcv_data)
+		reception_error = False
+		try:
+			data = data_collect_box.decrypt(rcv_data)
+			print(data)
+		except nacl.exceptions.CryptoError:
+			print("Error while receiving data: CryptoError!")
+			reception_error = True
+		if rcv_data.find(b"ERROR") == 0:
+			print("Error with data checksum: did not verify!")
+			reception_error = True
+		if reception_error:
+			print("Preparing NACK...")
+			encnack = data_collect_box.encrypt(b"ER:NACK")
+			encmsg = SENSORS_DEST_ADDR + message_types["NACK"] + encnack
+			print("Sending NACK...")
+			print(encmsg)
+			ser.write(encmsg)
+			print("NACK sent!")
+		else:
+			print("Encrypting ACK...")
+			encack = data_collect_box.encrypt(b"MSG:ACK")
+			encmsg = SENSORS_DEST_ADDR + message_types["ACK"] + encack
+			print("Sending ACK...")
+			ser.write(encmsg)
+			print("ACK sent!")
+	if data == "stop":
+		closeUART()
+		print("Connection stopped by sensors.")
 
 	# sensors_box = initKeyExchange(sk_sensors, ser)
 	
 	# TODO: replace with API yields when our API is set up
-	ack = ""
-	while(ack != "stop"):
-		print("Receiving data...")
-		encmessage = ser.read_until("\n\r").split(";")[3]
-		decmessage = data_collect_box.decrypt(encmessage)
-		print(decmessage)
-		ack = input("Response? ")
-		ackmessg = unhex(SENSORS_DEST_ADDR) + unhex(message_types["ACK"]) + ack
-		print(ackmessg)
-		print(ackmessg.encode)
-		if ack != "stop":
-			print("Sending " + ack + "...")
-			sendUARTMessage(ack)
-			# We don't wait for a response, we just wait for another message
-		else:
-			closeUART()
-			print("Stopped.")
+	# ack = ""
+	# while(ack != "stop"):
+	# 	print("Receiving data...")
+	# 	encmessage = ser.readline().split(";")[3].rstrip()
+	# 	decmessage = data_collect_box.decrypt(encmessage)
+	# 	print(decmessage.decode("utf-8"))
+	# 	ack = input("Response? ")
+	# 	if ack != "stop":
+	# 		ackmessg = SENSORS_DEST_ADDR + message_types["ACK"] + ack.encode()
+	# 		print(ackmessg)
+	# 		print(ackmessg.encode)
+	# 		print("Sending " + ack + "...")
+	# 		ser.write(ackmessg)
+	# 		# We don't wait for a response, we just wait for another message
+	# 	else:
+	# 		closeUART()
+	# 		print("Stopped.")

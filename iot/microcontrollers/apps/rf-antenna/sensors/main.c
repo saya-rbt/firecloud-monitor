@@ -243,13 +243,13 @@ void handle_rf_rx_data(void)
 		// be handled on the Raspberry Pi and then to the app.
 		// We only do that if the checksum is correct though.
 		if(checksum(received_payload.data, 47) == received_payload.checksum)
-			uprintf(UART0, "%x;%x;%x;%s\n\r", 
+			uprintf(UART0, "%x;%x;%x;%s", 
 				received_payload.source,
 				received_payload.checksum,
 				received_payload.message_type,
 				received_payload.data);
 		else
-			uprintf(UART0, "%x;%x;%x;ERROR: incorrect checksum. Ask for the data again.\n\r",
+			uprintf(UART0, "%x;%x;%x;ERROR : wrong checksum. Ask for the data again.",
 				received_payload.source,
 				received_payload.checksum,
 				received_payload.message_type);
@@ -268,7 +268,6 @@ void handle_rf_rx_data(void)
 static volatile uint32_t cc_tx = 0;
 static volatile uint8_t cc_tx_buff[RF_BUFF_LEN];
 static volatile uint8_t cc_ptr = 0;
-static volatile unsigned char cc_checksum = 0;
 void handle_uart_cmd(uint8_t c)
 {
 #ifdef DEBUG
@@ -292,7 +291,7 @@ void handle_uart_cmd(uint8_t c)
 	// gpio_clear(status_led_red);
 	// gpio_set(status_led_green);
 
-	if ((c == '\n') || (c == '\r') || (cc_ptr>=48)) {
+	if (/*(c == '\n') || (c == '\r') || */(cc_ptr>=49)) {
 
 		cc_tx_buff[cc_ptr++] = '\0';
 		
@@ -314,7 +313,7 @@ void send_on_rf(void)
 	gpio_set(status_led_red);
 	// chenillard(250);
 	uint8_t cc_tx_data[sizeof(packet_t) + 2];
-	// int ret = 0;
+	int ret = 0;
 	packet_t tbs_packet;
 
 	/* Create a local copy */
@@ -342,27 +341,27 @@ void send_on_rf(void)
 	}
 
 	// Sending the packet
-	// ret = cc1101_send_packet(cc_tx_data, (sizeof(packet_t) + 2));
+	ret = cc1101_send_packet(cc_tx_data, (sizeof(packet_t) + 2));
 
 	// Only here for tests: echo what we send
-	uprintf(UART0, "%s\n\r", cc_tx_buff);
+	// uprintf(UART0, "%s\n\r", cc_tx_buff);
 
 	gpio_clear(status_led_red);
 	gpio_set(status_led_green);
 
 	// Resetting the leds
-	// if(ret <= 0)
-	// {
-	// 	// Since we don't use UART to signal problems and we don't have a screen
-	// 	// here either, we're using what we can, aka the LEDs again.
-	// 	gpio_clear(status_led_green);
-	// 	gpio_set(status_led_red);
-	// }
-	// else
-	// {
-	// 	gpio_clear(status_led_red);
-	// 	gpio_set(status_led_green);
-	// }
+	if(ret < 0)
+	{
+		// Since we don't use UART to signal problems and we don't have a screen
+		// here either, we're using what we can, aka the LEDs again.
+		gpio_clear(status_led_green);
+		gpio_set(status_led_red);
+	}
+	else
+	{
+		gpio_clear(status_led_red);
+		gpio_set(status_led_green);
+	}
 
 #ifdef DEBUG
 	uprintf(UART0, "Tx ret: %d\n\r", ret);
@@ -397,11 +396,14 @@ int main(void)
 			cc_tx = 0;
 		}
 
-		/* Do not leave radio in an unknown or unwated state */
+		/* Do not leave radio in an unknown or unwanted state */
 		do
 		{
 			status = (cc1101_read_status() & CC1101_STATE_MASK);
 		} while (status == CC1101_STATE_TX);
+
+		// gpio_clear(status_led_green);
+		// gpio_set(status_led_red);
 
 		if (status != CC1101_STATE_RX) {
 			static uint8_t loop = 0;
@@ -417,11 +419,13 @@ int main(void)
 			}
 		}
 
+
 		if (check_rx == 1)
 		{
 			handle_rf_rx_data();
 			check_rx = 0;
 		}
+		chenillard(250);
 	}
 	return 0;
 }
