@@ -14,7 +14,6 @@ class Sensor(models.Model):
     posy = models.IntegerField()
     latitude = models.FloatField()
     longitude = models.FloatField()
-    state = models.BooleanField(default=False)
     def __str__(self):
         return '(%d,%d)' % (self.posx, self.posy)
 
