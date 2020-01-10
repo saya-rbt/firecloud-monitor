@@ -186,7 +186,7 @@ typedef struct packet_t
 	unsigned char source;
 	unsigned char checksum;
 	unsigned char message_type;
-	unsigned char data[47];
+	unsigned char data[48];
 } packet_t;
 
 // This will be used to transfer data from where we got it (rf) to the USB (UART0)
@@ -242,14 +242,14 @@ void handle_rf_rx_data(void)
 		// Sending our sensors values on the USB, which will then
 		// be handled on the Raspberry Pi and then to the app.
 		// We only do that if the checksum is correct though.
-		if(checksum(received_payload.data, 47) == received_payload.checksum)
-			uprintf(UART0, "%x;%x;%x;%s", 
+		if(checksum(received_payload.data, 48) == received_payload.checksum)
+			uprintf(UART0, "%c;%c;%c;%s", 
 				received_payload.source,
 				received_payload.checksum,
 				received_payload.message_type,
 				received_payload.data);
 		else
-			uprintf(UART0, "%x;%x;%x;ERROR : wrong checksum. Ask for the data again.",
+			uprintf(UART0, "%c;%c;%c;ERROR : wrong checksum. Ask for the data again.",
 				received_payload.source,
 				received_payload.checksum,
 				received_payload.message_type);
@@ -317,12 +317,12 @@ void send_on_rf(void)
 	packet_t tbs_packet;
 
 	/* Create a local copy */
-	unsigned char packet_data[47];
-	memcpy((char*)&packet_data, (char*)&(cc_tx_buff[2]), 47);
+	unsigned char packet_data[48];
+	memcpy(packet_data, (char*)&(cc_tx_buff[2]), 48);
 	tbs_packet.source = MODULE_ADDRESS;
-	tbs_packet.checksum = checksum(packet_data, 47);
+	tbs_packet.checksum = checksum(packet_data, 48);
 	tbs_packet.message_type = cc_tx_buff[1];
-	memcpy((char*)&(tbs_packet.data), &packet_data, 47);
+	memcpy((char*)tbs_packet.data, packet_data, 48);
 
 	// Preparing our packet by copying our payload inside
 	// 0 and 1 indexes are for length and destination, respectively
@@ -356,6 +356,16 @@ void send_on_rf(void)
 		// here either, we're using what we can, aka the LEDs again.
 		gpio_clear(status_led_green);
 		gpio_set(status_led_red);
+
+		// Clearing the buffers
+		memset((char*)cc_tx_buff, 0, RF_BUFF_LEN);
+		tbs_packet = (const struct packet_t){0};
+		// uint8_t cc_tx_buff_clearer[RF_BUFF_LEN];
+		// memcpy((char*)&cc_tx_buff, (char*)&cc_tx_buff_clearer, RF_BUFF_LEN);
+
+		// packet_t packet_clearer;
+		// memcpy(&packet_data, &packet_clearer, sizeof(packet_t));
+		// memset(tbs_packet, 0, sizeof(packet_t));
 	}
 	else
 	{
