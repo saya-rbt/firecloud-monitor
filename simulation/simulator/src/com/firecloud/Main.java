@@ -3,9 +3,7 @@ import com.firecloud.Fire;
 import com.firecloud.Sensor;
 
 import java.io.IOException;
-import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 
 import java.util.Timer;
@@ -66,9 +64,14 @@ public class Main {
 
         private void completeTask() {
             ApiHelper api = new ApiHelper();
-
+            Map<Object, Object> data = new HashMap<>();
+            data.put("latitude", "10");
+            data.put("longitude", "10");
+            data.put("intensity", "1");
+            data.put("radius", "0");
+            data.put("sensor", "http://192.168.0.10:8001/sensors/1/");
             try {
-                api.sendPost();
+                api.sendPost(data, "http://192.168.0.10:8001/fires/");
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -84,6 +87,22 @@ public class Main {
     }
     public static void main(String[] args) {
         System.out.print("Hello World !");
+
+        Map<Object, Object> data = new HashMap<>();
+        data.put("latitude", "10");
+        data.put("longitude", "10");
+        data.put("posx", "10");
+        data.put("posy", "10");
+
+        ApiHelper api = new ApiHelper();
+
+        try {
+            api.sendPost(data, "http://192.168.0.10:8001/sensors/");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
         Timer tim = new Timer();
         TimerTask moveTrucks = new MoveTrucksTask();
         TimerTask createFires = new CreateFiresTask();

@@ -34,18 +34,10 @@ public class ApiHelper {
 
     }
 
-    public void sendPost() throws Exception {
-
-        // form parameters
-        Map<Object, Object> data = new HashMap<>();
-        data.put("latitude", "10");
-        data.put("longitude", "10");
-        data.put("intensity", "1");
-        data.put("radius", "0");
-        data.put("sensor", "http://192.168.0.10:8001/sensors/1/");
+    public void sendPost(Map<Object, Object> pData, String pURI) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
-                .POST(buildFormDataFromMap(data))
-                .uri(URI.create("http://192.168.0.10:8001/fires/"))
+                .POST(buildFormDataFromMap(pData))
+                .uri(URI.create(pURI))
                 .setHeader("User-Agent", "Java 11 HttpClient Bot") // add request header
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .build();
