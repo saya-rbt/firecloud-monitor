@@ -7,6 +7,7 @@ import nacl.utils
 import nacl.secret
 from nacl.encoding import Base64Encoder
 from nacl.public import PrivateKey, Box, PublicKey
+import paho.mqtt.client as mqttclient
 
 # Serial
 import serial
@@ -31,6 +32,13 @@ keyfiles_f = "keys/"
 # Communication variables
 # ALL THOSE ARE HEX VALUES STORED IN STRINGS
 message_types = {"HELLO": b"\x01", "THERE": b"\x02", "DATA": b"\x03", "ACK": b"\x04", "NACK":b"\x05"}
+
+# Server variables
+with open("mqtt.cfg") as mqttfile:
+	cfg = mqttfile.readlines()
+	mqtt_broker = cfg[0].rstrip()
+	mqtt_port = int(cfg[1].rstrip())
+
 
 ## Actual code
 
@@ -77,6 +85,11 @@ def init_sbox(sensors_address):
 		print("No keyfile found for sensor " + sensors_address + "!")
 		return None
 
+# Backend functions
+def mqtt_on_publish(client, data, result):
+	print("Data published on MQTT!")
+	pass
+
 ## Main
 if __name__ == "__main__":
 	# Initiating the UART
@@ -86,6 +99,10 @@ if __name__ == "__main__":
 	# This dict will have the address of the platform as key and the 
 	# corresponding NaCl SecretBox as a value
 	connections = {}
+
+	mqtt_client = mqttclient.Client("data_collect")
+	mqtt_client.on_publish = mqtt_on_publish
+	mqtt_client.connect(mqtt_broker, mqtt_port)
 
 	while True:
 		# Listening for a message
@@ -127,6 +144,9 @@ if __name__ == "__main__":
 					source_data_dec = connections[source_addr].decrypt(source_data).decode('utf-8')
 					print("Data is " + source_data_dec)
 					print("Sending to the server... [TODO]")
+					data_split = source_data_dec.strip("()").split(",")
+					mqtt_msg = "intensite,capteur=capteur" + data_split[1] + data_split[0] + " valeur=" + data_split[2]
+					ret = mqtt_client.publish("sensors", mqtt_msg, 1)
 					print("Sending ACK...")
 					msg = source_addr + message_types["ACK"] + connections[source_addr].encrypt(b"ACK:SUC")
 				except nacl.exceptions.CryptoError:

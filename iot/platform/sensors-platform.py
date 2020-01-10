@@ -156,8 +156,8 @@ if __name__ == "__main__":
 					print("Waiting for a response...")
 					ans = ser.read(53)
 					if len(ans) != 53:
-						print("ERROR: response timeout. Resending...")
-						sending = True
+						print("ERROR: response timeout! Skipping.")
+						sending = False
 						continue
 					else:
 						source_addr = bytes([ans[0]])
@@ -168,7 +168,7 @@ if __name__ == "__main__":
 						# If we receive a NACK, we resend the message until we get an
 						# ACK response
 						while source_flag == message_types["NACK"]:
-							print("NACK received. Resending " + fire + "...")
+							print("NACK received. Resending " + data + "...")
 							ser.write(encmsg)
 							print("Resent!")
 							print("Waiting again for ACK...")
@@ -182,10 +182,12 @@ if __name__ == "__main__":
 						if source_flag == message_types["ACK"]:
 							print("ACK received!")
 							sending = False
+							continue
 						# Any other response will print an error
 						else:
 							print("ERROR: wrong response!")
 							sending = False
+							continue
 
 		# If the connection fails, we stop.
 		else:

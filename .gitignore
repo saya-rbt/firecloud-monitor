@@ -4,3 +4,4 @@
 objs
 iot/platform/keys
 *.keyfile
+iot/platform/mqtt.cfg
