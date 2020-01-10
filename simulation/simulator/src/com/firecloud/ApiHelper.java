@@ -42,7 +42,7 @@ public class ApiHelper {
         data.put("longitude", "10");
         data.put("intensity", "1");
         data.put("radius", "0");
-        data.put("sensor", "1");
+        data.put("sensor", "http://192.168.0.10:8001/sensors/1/");
         HttpRequest request = HttpRequest.newBuilder()
                 .POST(buildFormDataFromMap(data))
                 .uri(URI.create("http://192.168.0.10:8001/fires/"))

@@ -89,8 +89,8 @@ public class Main {
         TimerTask createFires = new CreateFiresTask();
         TimerTask updateFires = new UpdateFiresTask();
         //tim.scheduleAtFixedRate(moveTrucks, 0, 1000);
-        //tim.scheduleAtFixedRate(createFires, 0, 1000);
-        tim.scheduleAtFixedRate(updateFires, 0, 1000);
+        tim.scheduleAtFixedRate(createFires, 0, 10000);
+        //tim.scheduleAtFixedRate(updateFires, 0, 1000);
 
         try {
             Thread.sleep(10000);
