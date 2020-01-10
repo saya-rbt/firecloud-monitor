@@ -47,7 +47,7 @@ def initUART():
 	ser.timeout = None		  #block read
 
 	# ser.timeout = 0			 #non-block read
-	# ser.timeout = 2			  #timeout block read
+	ser.timeout = 5			  #timeout block read
 	ser.xonxoff = False	 #disable software flow control
 	ser.rtscts = False	 #disable hardware (RTS/CTS) flow control
 	ser.dsrdtr = False	   #disable hardware (DSR/DTR) flow control
@@ -98,21 +98,26 @@ def init_connection(data_collect_address, ser):
 		print("HELLO sent!")
 		print("Waiting for THERE...")
 		ans = ser.read(53)
-		source_addr = bytes([ans[0]])
-		source_cksm = bytes([ans[2]])
-		source_flag = bytes([ans[4]])
-		source_data = ans[6:]
+		if len(ans) != 53:
+			print(len(ans))
+			print("ERROR: response timeout. Resending...")
+			continue
+		else:
+			source_addr = bytes([ans[0]])
+			source_cksm = bytes([ans[2]])
+			source_flag = bytes([ans[4]])
+			source_data = ans[6:]
 
-		# Those are the two responses we expect.
-		# If we get anything else, we retry.
-		if source_flag == message_types["THERE"]:
-			print("Connection established!")
-			established = True
-		elif source_flag == message_types["NACK"]:
-			if source_data.find(b"ERROR 01") != -1:
-				return False
-			else:
-				continue
+			# Those are the two responses we expect.
+			# If we get anything else, we retry.
+			if source_flag == message_types["THERE"]:
+				print("Connection established!")
+				established = True
+			elif source_flag == message_types["NACK"]:
+				if source_data.find(b"ERROR 01") != -1:
+					return False
+				else:
+					continue
 	return True
 
 ## Main
@@ -129,43 +134,59 @@ if __name__ == "__main__":
 		if sbox is not None:
 			data = ""
 			# We use this for tests before hooking it to the API
+			sending = False
 			while data != "stop it":
-				print("TODO: Get the data from the API instead")
-				data = input("Message? ")
+				if not sending:
+					print("TODO: Get the data from the API instead")
+					data = input("Message? ")
+					sending = True
 				
-				# Encrypting the message
-				print("Encrypting " + data + "...")
-				encrypted = sbox.encrypt(data.encode())
-				encmsg = DATA_COLLECT_DEST_ADDR + message_types["DATA"] + encrypted
-				
-				# Sending the message through the UART
-				print("Sending " + data + "...")
-				ser.write(encmsg)
-				print("Sent!")
-
-				# Waiting for a response from the data collect platform
-				print("Waiting for a response...")
-				ans = ser.read(53)
-				source_addr = bytes([ans[0]])
-				source_cksm = bytes([ans[2]])
-				source_flag = bytes([ans[4]])
-				source_data = ans[6:]
-
-				# If we receive a NACK, we resend the message until we get an
-				# ACK response
-				while source_flag == message_types["NACK"]:
-					print("NACK received. Resending " + fire + "...")
+				if sending:
+					# Encrypting the message
+					print("Encrypting " + data + "...")
+					encrypted = sbox.encrypt(data.encode())
+					encmsg = DATA_COLLECT_DEST_ADDR + message_types["DATA"] + encrypted
+					
+					# Sending the message through the UART
+					print("Sending " + data + "...")
 					ser.write(encmsg)
-					print("Resent!")
-					print("Waiting again for ACK...")
-					encresponse = ser.read(53)
+					print("Sent!")
 
-				# If we get an ACK, it's all good
-				if source_flag == message_types["ACK"]:
-					print("ACK received!")
-				# Any other response will print an error
-				else:
-					print("ERROR: wrong response!")
+					# Waiting for a response from the data collect platform
+					print("Waiting for a response...")
+					ans = ser.read(53)
+					if len(ans) != 53:
+						print("ERROR: response timeout. Resending...")
+						sending = True
+						continue
+					else:
+						source_addr = bytes([ans[0]])
+						source_cksm = bytes([ans[2]])
+						source_flag = bytes([ans[4]])
+						source_data = ans[6:]
+
+						# If we receive a NACK, we resend the message until we get an
+						# ACK response
+						while source_flag == message_types["NACK"]:
+							print("NACK received. Resending " + fire + "...")
+							ser.write(encmsg)
+							print("Resent!")
+							print("Waiting again for ACK...")
+							encresponse = ser.read(53)
+							if len(encresponse) != 53:
+								print("ERROR : response timeout!")
+								sending = True
+								continue
+
+						# If we get an ACK, it's all good
+						if source_flag == message_types["ACK"]:
+							print("ACK received!")
+							sending = False
+						# Any other response will print an error
+						else:
+							print("ERROR: wrong response!")
+							sending = False
+
 		# If the connection fails, we stop.
 		else:
 			print("Stopped: couldn't establish a SecretBox.")

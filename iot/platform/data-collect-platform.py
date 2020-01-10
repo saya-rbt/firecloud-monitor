@@ -45,7 +45,7 @@ def initUART():
 	ser.timeout = None		  #block read
 
 	# ser.timeout = 0			 #non-block read
-	# ser.timeout = 2			  #timeout block read
+	# ser.timeout = 5			  #timeout block read
 	ser.xonxoff = False	 #disable software flow control
 	ser.rtscts = False	 #disable hardware (RTS/CTS) flow control
 	ser.dsrdtr = False	   #disable hardware (DSR/DTR) flow control
@@ -123,11 +123,15 @@ if __name__ == "__main__":
 				msg = source_addr + message_types["NACK"] + b"ERROR 02: Please establish a connection first!"
 			else:
 				print("Decrypting data...")
-				source_data_dec = connections[source_addr].decrypt(source_data).decode('utf-8')
-				print("Data is " + source_data_dec)
-				print("Sending to the server... [TODO]")
-				print("Sending ACK...")
-				msg = source_addr + message_types["ACK"] + connections[source_addr].encrypt(b"ACK:SUC")
+				try:
+					source_data_dec = connections[source_addr].decrypt(source_data).decode('utf-8')
+					print("Data is " + source_data_dec)
+					print("Sending to the server... [TODO]")
+					print("Sending ACK...")
+					msg = source_addr + message_types["ACK"] + connections[source_addr].encrypt(b"ACK:SUC")
+				except nacl.exceptions.CryptoError:
+					print("ERROR: decrypting error. Sending NACK...")
+					msg = source_addr + message_types["NACK"] + b"ERROR 03 : Error while decrypting message data!"
 
 		# The message will be forged in the previous conditions
 		ser.write(msg)
