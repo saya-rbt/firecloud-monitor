@@ -54,6 +54,15 @@ And here is the table of the current message types (can be expanded later):
 |   0x05    | NACK (transmission error, send the data again) |
 | 0x06-0xFF |       Undefined, reserved for future use       |
 
+`NACK` messages codes:
+
+| Code |                                  Message                                   |
+|:----:|:--------------------------------------------------------------------------:|
+|  01  |                    No keyfile was found for this sensor                    |
+|  02  | No connection was established. Please establish a connection first (HELLO) |
+
+
+
 ## The team
 
 |                  Member                   |                                    Role                                     |
