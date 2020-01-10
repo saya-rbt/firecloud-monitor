@@ -64,55 +64,10 @@ def closeUART():
 	ser.close()
 
 # Encryption functions
-def unhex(hex):
-	return bytes.fromhex(hex).decode("utf-8")
 
-def pad(msg):
-	if len(msg) < 49:
-		for i in range(49-len(msg)):
-			msg += b"\xff"
-	return msg
-
-# def initKeyExchange(sk_sensors, ser):
-# 	pk_sensors = sk_sensors.public_key
-	
-# 	print("Sending our public key...")
-# 	# print(DATA_COLLECT_DEST_ADDR + message_types["HELLO"] + pk_sensors.encode(Base64Encoder).decode())
-	
-# 	sent_pk = DATA_COLLECT_DEST_ADDR + message_types["HELLO"] + pk_sensors.encode()
-	
-# 	print(pk_sensors)
-# 	# print(len(sent_pk))
-# 	sent_pk_padded = pad(sent_pk)
-# 	# print(sent_pk_padded)
-# 	# print(len(sent_pk_padded))
-	
-# 	ser.write(sent_pk_padded)
-	
-# 	print("Waiting for the data collect platform...")
-# 	input_ser = ser.read(54)
-# 	pk_data_collect = input_ser[8:40]
-# 	# pk_data_collect = ser.readline().decode()#.split(";")[3].rstrip() # TODO: handle flags
-# 	print("Data collect public key received!")
-# 	print(pk_data_collect)
-# 	# flags = input_ser[:6].decode().split(";")
-	
-# 	box = Box(sk_sensors, nacl.public.PublicKey(pk_data_collect))
-# 	print("test:")
-# 	print(box.encrypt(b"connard"))
-# 	return box
-
-
-	# print(pk_sensors.encode(Base64Encoder).decode())
-	# print(unhex(DATA_COLLECT_DEST_ADDR))
-	# print(unhex(message_types["HELLO"]))
-	# print("-----")
-	# print(bytes.fromhex(DATA_COLLECT_DEST_ADDR) + bytes.fromhex(message_types["HELLO"]) + pk_sensors.encode(Base64Encoder))
-	# if (unhex(DATA_COLLECT_DEST_ADDR) + unhex(message_types["HELLO"]) + pk_sensors.encode(Base64Encoder).decode()) == (bytes.fromhex(DATA_COLLECT_DEST_ADDR) + bytes.fromhex(message_types["HELLO"]) + pk_sensors.encode(Base64Encoder)).decode():
-	# 	print("yes")
-	# else:
-	# 	print("no")
-
+# init_sbox: will return an NaCl SecretBox initialized
+# by the key found in the keyfile provided.
+# Takes a bytes.hex() (ie. a 2 character hexadecimal string)
 def init_sbox(sensors_address):
 	try:
 		print("Opening keyfile for sensor " + sensors_address + "...")
@@ -124,23 +79,32 @@ def init_sbox(sensors_address):
 		print("No keyfile found for sensor " + sensors_address + "!")
 		return None
 
+# init_connection: will return True or False depending on whether
+# the data collect platform (the server) could find our key in its database
+# and send a THERE message or not
+# Takes a byte with the platform address and the serial port to send data through
 def init_connection(data_collect_address, ser):
+
 	print("Establishing connection with " + DATA_COLLECT_DEST_ADDR.hex())
+
+	# Crafting our packet
 	msg = DATA_COLLECT_DEST_ADDR + message_types["HELLO"] + b"HELLO: " + SENSORS_ADDRESS + b" is trying to establish a connection..."
 	established = False
+
+	# We retry to establish a connection until we have either a THERE or a NACK
 	while not established:
 		print("Sending HELLO...")
-		print(msg)
 		ser.write(msg)
 		print("HELLO sent!")
 		print("Waiting for THERE...")
 		ans = ser.read(53)
-		print(ans)
-		print(len(ans))
 		source_addr = bytes([ans[0]])
 		source_cksm = bytes([ans[2]])
 		source_flag = bytes([ans[4]])
 		source_data = ans[6:]
+
+		# Those are the two responses we expect.
+		# If we get anything else, we retry.
 		if source_flag == message_types["THERE"]:
 			print("Connection established!")
 			established = True
@@ -160,85 +124,48 @@ if __name__ == "__main__":
 	if not init_connection(DATA_COLLECT_DEST_ADDR, ser):
 		print("Could not establish collection: no keyfile!")
 	else:
+		# Instantiating the SecretBox only when the connection is established
 		sbox = init_sbox(SENSORS_ADDRESS.hex())
 		if sbox is not None:
 			data = ""
-			while data != "stop":
+			# We use this for tests before hooking it to the API
+			while data != "stop it":
+				print("TODO: Get the data from the API instead")
 				data = input("Message? ")
 				
+				# Encrypting the message
 				print("Encrypting " + data + "...")
 				encrypted = sbox.encrypt(data.encode())
 				encmsg = DATA_COLLECT_DEST_ADDR + message_types["DATA"] + encrypted
 				
+				# Sending the message through the UART
 				print("Sending " + data + "...")
-				print(encmsg)
-				print(len(encmsg))
 				ser.write(encmsg)
 				print("Sent!")
 
+				# Waiting for a response from the data collect platform
 				print("Waiting for a response...")
 				ans = ser.read(53)
-				print(ans)
 				source_addr = bytes([ans[0]])
 				source_cksm = bytes([ans[2]])
 				source_flag = bytes([ans[4]])
 				source_data = ans[6:]
+
+				# If we receive a NACK, we resend the message until we get an
+				# ACK response
 				while source_flag == message_types["NACK"]:
 					print("NACK received. Resending " + fire + "...")
 					ser.write(encmsg)
 					print("Resent!")
 					print("Waiting again for ACK...")
 					encresponse = ser.read(53)
-				# encresponse_data = source_data
+
+				# If we get an ACK, it's all good
 				if source_flag == message_types["ACK"]:
 					print("ACK received!")
+				# Any other response will print an error
 				else:
 					print("ERROR: wrong response!")
-				# try:
-				# 	decresponse = sbox.decrypt(encresponse_data)
-				# 	print("ACK received:")
-				# 	print(decresponse.decode("utf-8"))
-				# except nacl.exceptions.CryptoError:
-				# 	print("Error when decrypting!")
-				data = ""
+		# If the connection fails, we stop.
 		else:
 			print("Stopped: couldn't establish a SecretBox.")
-
-
-	# sk_sensors = PrivateKey.generate() # THIS MUST BE KEPT SECRET
-	
-	# initUART()
-	# print("Initiating key exchange...")
-	# sensors_box = initKeyExchange(sk_sensors, ser)
-	
-	# # TODO: replace with API yields when our API is set up
-	# fire = ""
-	# while(fire != "stop"):
-	# 	fire = input("Message? ")
-	# 	print("Encrypting " + fire + "...")
-	# 	encrypted = sensors_box.encrypt(fire.encode())
-	# 	encmsg = DATA_COLLECT_DEST_ADDR + message_types["DATA"] + encrypted
-	# 	print("Sending " + fire + "...")
-	# 	print(encmsg)
-	# 	ser.write(encmsg)
-	# 	print("Sent!")
-	# 	# Wait for ACK
-	# 	print("Waiting for ACK...")
-	# 	encresponse = ser.read(54)
-	# 	print(encresponse)
-	# 	while encresponse[5] == message_types["NACK"]:
-	# 		print("NACK received. Resending " + fire + "...")
-	# 		ser.write(encmsg)
-	# 		print("Resent!")
-	# 		print("Waiting again for ACK...")
-	# 		encresponse = ser.read(54)
-	# 	encresponse_data = encresponse[7:]
-	# 	try:
-	# 		decresponse = sensors_box.decrypt(encresponse_data)
-	# 		print("ACK received:")
-	# 		print(decresponse.decode("utf-8"))
-	# 	except nacl.exceptions.CryptoError:
-	# 		print("Error when decrypting!")
-	# if fire == "stop":
-	# 	closeUART()
-	# 	print("Stopped.")

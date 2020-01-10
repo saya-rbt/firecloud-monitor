@@ -62,52 +62,10 @@ def closeUART():
 	ser.close()
 
 # Encryption functions
-def unhex(hex):
-	return bytes.fromhex(hex).decode("utf-8")
 
-
-def pad(msg):
-	if len(msg) < 49:
-		for i in range(49-len(msg)):
-			msg += b"\xff"
-	return msg
-
-# def initKeyExchange(sk_data_collect, ser):
-# 	pk_data_collect = sk_data_collect.public_key
-# 	print("Waiting for key exchange...")
-# 	input_ser = ser.read(54)
-# 	# print(input_ser)
-# 	# print(len(input_ser))
-# 	print("Sensors public key received!")
-# 	pk_sensors = input_ser[7:39]
-# 	print(pk_sensors)
-# 	flags = input_ser[:6].decode().split(";")
-# 	# pk_sensors = a.split(";")[3].rstrip()
-# 	print("Replying with our public key...")
-# 	# print(pk_sensors)
-# 	# print(len(pk_sensors))
-# 	sent_pk = SENSORS_DEST_ADDR + message_types["THERE"] + pk_data_collect.encode()
-# 	print(pk_data_collect)
-# 	sent_pk_padded = pad(sent_pk)
-# 	# print(sent_pk_padded)
-# 	# print(len(sent_pk_padded))
-# 	ser.write(sent_pk_padded)
-
-# 	box = Box(sk_data_collect, nacl.public.PublicKey(pk_sensors))
-# 	print("test:")
-# 	print(box.encrypt(b"connard"))
-# 	return box
-
-	# print(pk_sensors.encode(Base64Encoder).decode())
-	# print(unhex(SENSORS_DEST_ADDR))
-	# print(unhex(message_types["HELLO"]))
-	# print("-----")
-	# print(bytes.fromhex(SENSORS_DEST_ADDR) + bytes.fromhex(message_types["HELLO"]) + pk_sensors.encode(Base64Encoder))
-	# if (unhex(SENSORS_DEST_ADDR) + unhex(message_types["HELLO"]) + pk_sensors.encode(Base64Encoder).decode()) == (bytes.fromhex(SENSORS_DEST_ADDR) + bytes.fromhex(message_types["HELLO"]) + pk_sensors.encode(Base64Encoder)).decode():
-	# 	print("yes")
-	# else:
-	# 	print("no")
-
+# init_sbox: will return an NaCl SecretBox initialized
+# by the key found in the keyfile provided.
+# Takes a bytes.hex() (ie. a 2 character hexadecimal string)
 def init_sbox(sensors_address):
 	try:
 		print("Opening keyfile for sensor " + sensors_address + "...")
@@ -118,35 +76,26 @@ def init_sbox(sensors_address):
 	except FileNotFoundError:
 		print("No keyfile found for sensor " + sensors_address + "!")
 		return None
-		# with open(keyfiles_f + sensors_address.hex() + ".keyfile", "rb") as keyfile:
-		# 	key = nacl.utils.random(nacl.secret.SecretBox.KEY_SIZE)
-		# 	keyfile.write(key)
-	
 
 ## Main
 if __name__ == "__main__":
-	# sk_data_collect = PrivateKey.generate() # THIS MUST BE KEPT SECRET
-	
-	# print("Initiating key exchange...")
+	# Initiating the UART
 	initUART()
 
+	# The data collect platform can store connections from several sensor ones
+	# This dict will have the address of the platform as key and the 
+	# corresponding NaCl SecretBox as a value
 	connections = {}
 
 	while True:
+		# Listening for a message
 		print("Waiting for a message...")
 		input_ser = ser.read(53)
 		print("Received message!")
-		print(input_ser)
 		source_addr = bytes([input_ser[0]])
-		# print(source_addr)
 		source_cksm = bytes([input_ser[2]])
-		# print(source_cksm)
 		source_flag = bytes([input_ser[4]])
-		# print(source_flag)
 		source_data = input_ser[6:]
-		# print(source_data)
-		# print(message_types["HELLO"])
-		# print(source_flag == message_types["HELLO"])
 
 		# If someone tries to establish a connection, we check if we have a keyfile
 		# for them.
@@ -164,6 +113,8 @@ if __name__ == "__main__":
 				print("Connection refused.")
 				print("Sending NACK...")
 				msg = source_addr + message_types["NACK"] + b"ERROR 01: no keyfile was found for this sensor."
+		
+		# Here we handle the DATA messages
 		elif source_flag == message_types["DATA"]:
 			print("Received data from " + source_addr.hex() + ".")
 			if source_addr not in connections:
@@ -177,72 +128,8 @@ if __name__ == "__main__":
 				print("Sending to the server... [TODO]")
 				print("Sending ACK...")
 				msg = source_addr + message_types["ACK"] + connections[source_addr].encrypt(b"ACK:SUC")
-				print(msg)
 
-		print(len(msg))
+		# The message will be forged in the previous conditions
 		ser.write(msg)
 		print("Message sent!")
 		msg = ""
-
-
-
-	
-	# data_collect_box = initKeyExchange(sk_data_collect, ser)
-
-	# data = ""
-	# while data != "stop":
-	# 	print("Waiting for data to be sent...")
-	# 	rcv_packet = ser.read(54)
-	# 	print("Data received!")
-	# 	# print(rcv_packet)
-	# 	rcv_data = rcv_packet[7:]
-	# 	print(rcv_data)
-	# 	reception_error = False
-	# 	try:
-	# 		data = data_collect_box.decrypt(rcv_data)
-	# 		print(data)
-	# 	except nacl.exceptions.CryptoError:
-	# 		print("Error while receiving data: CryptoError!")
-	# 		reception_error = True
-	# 	if rcv_data.find(b"ERROR") == 0:
-	# 		print("Error with data checksum: did not verify!")
-	# 		reception_error = True
-	# 	if reception_error:
-	# 		print("Preparing NACK...")
-	# 		encnack = data_collect_box.encrypt(b"ER:NACK")
-	# 		encmsg = SENSORS_DEST_ADDR + message_types["NACK"] + encnack
-	# 		print("Sending NACK...")
-	# 		print(encmsg)
-	# 		ser.write(encmsg)
-	# 		print("NACK sent!")
-	# 	else:
-	# 		print("Encrypting ACK...")
-	# 		encack = data_collect_box.encrypt(b"MSG:ACK")
-	# 		encmsg = SENSORS_DEST_ADDR + message_types["ACK"] + encack
-	# 		print("Sending ACK...")
-	# 		ser.write(encmsg)
-	# 		print("ACK sent!")
-	# if data == "stop":
-	# 	closeUART()
-	# 	print("Connection stopped by sensors.")
-
-	# sensors_box = initKeyExchange(sk_sensors, ser)
-	
-	# TODO: replace with API yields when our API is set up
-	# ack = ""
-	# while(ack != "stop"):
-	# 	print("Receiving data...")
-	# 	encmessage = ser.readline().split(";")[3].rstrip()
-	# 	decmessage = data_collect_box.decrypt(encmessage)
-	# 	print(decmessage.decode("utf-8"))
-	# 	ack = input("Response? ")
-	# 	if ack != "stop":
-	# 		ackmessg = SENSORS_DEST_ADDR + message_types["ACK"] + ack.encode()
-	# 		print(ackmessg)
-	# 		print(ackmessg.encode)
-	# 		print("Sending " + ack + "...")
-	# 		ser.write(ackmessg)
-	# 		# We don't wait for a response, we just wait for another message
-	# 	else:
-	# 		closeUART()
-	# 		print("Stopped.")
