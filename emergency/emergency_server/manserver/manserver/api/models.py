@@ -25,7 +25,8 @@ class Fire(models.Model):
     longitude = models.FloatField()
     intensity = models.IntegerField()
     radius = models.FloatField()
-    startdate = models.DateTimeField(auto_now_add=True,)
+    created = models.DateTimeField(auto_now_add=True,)
+    updated = models.DateTimeField(auto_now=True,)
     sensor = models.ForeignKey(Sensor, related_name='fires', on_delete=models.CASCADE)
 
 class Truck(models.Model):
