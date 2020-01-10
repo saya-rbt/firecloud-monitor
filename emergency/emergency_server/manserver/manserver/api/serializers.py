@@ -5,33 +5,33 @@ from rest_framework import serializers
 class GroupSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Group
-        fields = ['name']
+        fields = ['id', 'name']
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     groups = GroupSerializer(many=True, read_only=True)
     class Meta:
         model = User
-        fields = ['url', 'username', 'email', 'groups']
+        fields = ['id', 'url', 'username', 'email', 'groups']
 
 class StationSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Station
-        fields = ['latitude', 'longitude', 'name', 'trucks']
+        fields = ['id', 'latitude', 'longitude', 'name', 'trucks']
         depth = 1
 
 class TruckSerializer(serializers.HyperlinkedModelSerializer):
     #station = StationSerializer(read_only=True)
     class Meta:
         model = Truck
-        fields = ['latitude', 'longitude', 'strength', 'station']
+        fields = ['id', 'latitude', 'longitude', 'strength', 'station']
 
 class SensorSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Sensor
-        fields = ['posx', 'posy', 'latitude', 'longitude', 'fires']
+        fields = ['id', 'posx', 'posy', 'latitude', 'longitude', 'fires']
 
 class FireSerializer(serializers.HyperlinkedModelSerializer):
     #sensor = SensorSerializer(read_only=True)
     class Meta:
         model = Fire
-        fields = ['latitude', 'longitude', 'intensity', 'radius', 'startdate', 'sensor']
+        fields = ['id', 'latitude', 'longitude', 'intensity', 'radius', 'startdate', 'sensor']
