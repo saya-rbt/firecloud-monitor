@@ -69,7 +69,7 @@ public class Main {
             data.put("longitude", "10");
             data.put("intensity", "1");
             data.put("radius", "0");
-            data.put("sensor", "http://192.168.0.10:8001/sensors/1/");
+            data.put("sensor", "http://192.168.0.10:8001/sensors/4/");
             try {
                 api.sendPost(data, "http://192.168.0.10:8001/fires/");
             } catch (Exception e) {
@@ -88,28 +88,13 @@ public class Main {
     public static void main(String[] args) {
         System.out.print("Hello World !");
 
-        Map<Object, Object> data = new HashMap<>();
-        data.put("latitude", "10");
-        data.put("longitude", "10");
-        data.put("posx", "10");
-        data.put("posy", "10");
-
-        ApiHelper api = new ApiHelper();
-
-        try {
-            api.sendPost(data, "http://192.168.0.10:8001/sensors/");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
         Timer tim = new Timer();
         TimerTask moveTrucks = new MoveTrucksTask();
         TimerTask createFires = new CreateFiresTask();
         TimerTask updateFires = new UpdateFiresTask();
         //tim.scheduleAtFixedRate(moveTrucks, 0, 1000);
         tim.scheduleAtFixedRate(createFires, 0, 10000);
-        //tim.scheduleAtFixedRate(updateFires, 0, 1000);
+        tim.scheduleAtFixedRate(updateFires, 0, 1000);
 
         try {
             Thread.sleep(10000);
