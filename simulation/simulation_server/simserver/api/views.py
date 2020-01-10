@@ -32,20 +32,6 @@ class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
 
-class StationViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows groups to be viewed or edited.
-    """
-    queryset = Station.objects.all()
-    serializer_class = StationSerializer
-
-class TruckViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows groups to be viewed or edited.
-    """
-    queryset = Truck.objects.all()
-    serializer_class = TruckSerializer
-
 class SensorViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows groups to be viewed or edited.
@@ -65,3 +51,9 @@ class FireViewSet(viewsets.ModelViewSet):
     """
     queryset = Fire.objects.all()
     serializer_class = FireSerializer
+
+    @action(detail=False)
+    def active_fires(self, request):
+        active_fires = Fire.objects.filter(intensity__gt=0)
+        serializer = self.get_serializer(active_fires, many=True)
+        return Response(serializer.data)
