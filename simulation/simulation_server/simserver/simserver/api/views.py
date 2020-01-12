@@ -4,6 +4,7 @@ from rest_framework import viewsets
 from simserver.api.serializers import *
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.db.models import Q
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -40,9 +41,9 @@ class SensorViewSet(viewsets.ModelViewSet):
     serializer_class = SensorSerializer
 
     @action(detail=False)
-    def active_sensors(self, request):
-        active_sensors = Sensor.objects.filter(state=True)
-        serializer = self.get_serializer(active_sensors, many=True)
+    def inactive_sensors(self, request):
+        inactive_sensors = Sensor.objects.filter(Q(fires__isnull=True) | Q(fires__intensity=0))
+        serializer = self.get_serializer(inactive_sensors, many=True)
         return Response(serializer.data)
 
 class FireViewSet(viewsets.ModelViewSet):

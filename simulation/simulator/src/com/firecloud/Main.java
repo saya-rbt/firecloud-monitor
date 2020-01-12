@@ -1,8 +1,12 @@
 package com.firecloud;
 import com.firecloud.Fire;
 import com.firecloud.Sensor;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.lang.reflect.Type;
 import java.util.*;
 
 
@@ -40,7 +44,7 @@ public class Main {
             ApiHelper api = new ApiHelper();
 
             try {
-                api.sendGet();
+                api.sendGet("/fires/");
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -64,25 +68,42 @@ public class Main {
 
         private void completeTask() {
             ApiHelper api = new ApiHelper();
-            Map<Object, Object> data = new HashMap<>();
-            data.put("latitude", "10");
-            data.put("longitude", "10");
-            data.put("intensity", "1");
-            data.put("radius", "0");
-            data.put("sensor", "http://192.168.0.10:8001/sensors/4/");
+            String json = "";
             try {
-                api.sendPost(data, "http://192.168.0.10:8001/fires/");
+                json = api.sendGet("/sensors/inactive_sensors/");
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
+            Gson myGson = new Gson();
+            Type empMapType = new TypeToken<Sensor[]>() {}.getType();
+            Sensor[] sensors = myGson.fromJson(json, empMapType);
+            if(sensors.length == 0)
+                return;
 
+            for (Sensor value : sensors) {
+                System.out.print(value.id + " "
+                        + value.posx + " "
+                        + value.posy + " "
+                        + value.latitude + " "
+                        + value.longitude + " ");
+                System.out.print("\n");
+            }
+
+            Random rand = new Random();
+            Sensor sensor = sensors[rand.nextInt(((sensors.length - 1)) + 1)];
+            Map<Object, Object> data = new HashMap<>();
+            data.put("latitude", sensor.latitude);
+            data.put("longitude", sensor.longitude);
+            data.put("intensity", rand.nextInt((10 - 1) + 1) + 1);
+            data.put("radius", "0");
+            data.put("sensor", "/sensors/" + sensor.id + "/");
             try {
-                //assuming it takes 20 secs to complete the task
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
+                api.sendPost(data, "/fires/");
+            } catch (Exception e) {
                 e.printStackTrace();
             }
+
         }
     }
     public static void main(String[] args) {

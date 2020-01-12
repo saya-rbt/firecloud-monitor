@@ -1,11 +1,15 @@
 package com.firecloud;
 
 public class Sensor extends Entity{
-    int posX;
-    int posY;
+    int posx;
+    int posy;
 
     public Sensor(int pPosX, int pPosY){
-        posX = pPosX;
-        posY = pPosY;
+        posx = pPosX;
+        posy = pPosY;
+    }
+
+    public void Create(int pPosx, int pPosy, float pLatitude, float pLongitude){
+
     }
 }

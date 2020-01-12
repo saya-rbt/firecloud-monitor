@@ -55,7 +55,7 @@ class SensorViewSet(viewsets.ModelViewSet):
 
     @action(detail=False)
     def active_sensors(self, request):
-        active_sensors = Sensor.objects.filter(state=True)
+        active_sensors = Sensor.objects.filter(fires__intensity__gt=0)
         serializer = self.get_serializer(active_sensors, many=True)
         return Response(serializer.data)
 
