@@ -40,4 +40,4 @@ class FireSerializer(serializers.HyperlinkedModelSerializer):
         fields = ['id', 'latitude', 'longitude', 'intensity', 'radius', 'created', 'updated', 'sensor', 'trucks', 'intervention_strength']
 
     def get_intervention_strength(self, obj):
-        return Truck.objects.filter(fire__id=obj.id).aggregate(Sum('strength'))
+        return Truck.objects.filter(fire__id=obj.id).aggregate(Sum('strength')).get('strength__sum')
