@@ -45,6 +45,7 @@ class TruckViewSet(viewsets.ModelViewSet):
     """
     queryset = Truck.objects.all()
     serializer_class = TruckSerializer
+    
 
 class SensorViewSet(viewsets.ModelViewSet):
     """
@@ -55,7 +56,7 @@ class SensorViewSet(viewsets.ModelViewSet):
 
     @action(detail=False)
     def active_sensors(self, request):
-        active_sensors = Sensor.objects.filter(fires__intensity__gt=0)
+        active_sensors = Sensor.objects.filter(fires__intensity__gt=0).distinct()
         serializer = self.get_serializer(active_sensors, many=True)
         return Response(serializer.data)
 

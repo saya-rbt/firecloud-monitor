@@ -42,7 +42,7 @@ class SensorViewSet(viewsets.ModelViewSet):
 
     @action(detail=False)
     def inactive_sensors(self, request):
-        inactive_sensors = Sensor.objects.filter(Q(fires__isnull=True) | Q(fires__intensity=0))
+        inactive_sensors = Sensor.objects.filter(Q(fires__isnull=True) | Q(fires__intensity=0)).distinct()
         serializer = self.get_serializer(inactive_sensors, many=True)
         return Response(serializer.data)
 
