@@ -35,9 +35,13 @@ class SensorSerializer(serializers.HyperlinkedModelSerializer):
 class FireSerializer(serializers.HyperlinkedModelSerializer):
     #sensor = SensorSerializer(read_only=True)
     intervention_strength = serializers.SerializerMethodField()
+    pending_strength = serializers.SerializerMethodField()
     class Meta:
         model = Fire
-        fields = ['id', 'latitude', 'longitude', 'intensity', 'radius', 'created', 'updated', 'sensor', 'trucks', 'intervention_strength']
+        fields = ['id', 'latitude', 'longitude', 'intensity', 'radius', 'created', 'updated', 'sensor', 'trucks', 'intervention_strength', 'pending_strength']
 
     def get_intervention_strength(self, obj):
-        return Truck.objects.filter(fire__id=obj.id).aggregate(Sum('strength')).get('strength__sum')
+        return Truck.objects.filter(fire__id=obj.id, latitude=obj.latitude, longitude=obj.latitude).aggregate(Sum('strength')).get('strength__sum')
+    def get_pending_strength(self, obj):
+        return Truck.objects.filter(fire__id=obj.id, latitude__ne=obj.latitude, longitude__ne=obj.latitude).aggregate(Sum('strength')).get('strength__sum')
+        

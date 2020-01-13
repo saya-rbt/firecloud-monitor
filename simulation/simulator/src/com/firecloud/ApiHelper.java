@@ -15,13 +15,12 @@ public class ApiHelper {
     private final HttpClient httpClient = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_2)
             .build();
-    public String serverURI = "http://127.0.0.1:8000";
 
     public String sendGet(String pURI) throws Exception {
 
         HttpRequest request = HttpRequest.newBuilder()
                 .GET()
-                .uri(URI.create(this.serverURI + pURI))
+                .uri(URI.create(pURI))
                 .setHeader("User-Agent", "Java 11 HttpClient Bot")
                 .build();
 
@@ -40,7 +39,25 @@ public class ApiHelper {
     public void sendPost(Map<Object, Object> pData, String pURI) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
                 .POST(buildFormDataFromMap(pData))
-                .uri(URI.create(this.serverURI + pURI))
+                .uri(URI.create(pURI))
+                .setHeader("User-Agent", "Java 11 HttpClient Bot") // add request header
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // print status code
+        System.out.println(response.statusCode());
+
+        // print response body
+        System.out.println(response.body());
+
+    }
+
+    public void sendPut(Map<Object, Object> pData, String pURI) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .PUT(buildFormDataFromMap(pData))
+                .uri(URI.create(pURI))
                 .setHeader("User-Agent", "Java 11 HttpClient Bot") // add request header
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .build();

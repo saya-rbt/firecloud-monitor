@@ -42,13 +42,36 @@ public class Main {
 
         private void completeTask() {
             ApiHelper api = new ApiHelper();
-
+            String json = "";
             try {
-                api.sendGet("/fires/");
+                json = api.sendGet("http://192.168.0.10:8000/fires/active/");
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
+            Gson myGson = new Gson();
+            Type empMapType = new TypeToken<ArrayList<Fire>>() {}.getType();
+            ArrayList<Fire> fires = myGson.fromJson(json, empMapType);
+            for(Fire fire : fires){
+                if(fire.intervention_strength >= fire.intensity){
+                    fire.intensity--;
+                }
+            }
+
+            for(Fire fire : fires){
+                Map<Object, Object> data = new HashMap<>();
+                data.put("latitude", fire.latitude);
+                data.put("longitude", fire.longitude);
+                data.put("intensity", fire.intensity);
+                data.put("radius", fire.radius);
+                data.put("sensor", fire.sensor);
+
+                try {
+                    api.sendPut(data, "http://192.168.0.10:8000/trucks/" + truck.id + "/");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
             try {
                 //assuming it takes 20 secs to complete the task
                 Thread.sleep(100);
@@ -70,7 +93,7 @@ public class Main {
             ApiHelper api = new ApiHelper();
             String json = "";
             try {
-                json = api.sendGet("/sensors/inactive_sensors/");
+                json = api.sendGet("http://192.168.0.10:8000/sensors/inactive/");
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -99,11 +122,10 @@ public class Main {
             data.put("radius", "0");
             data.put("sensor", "/sensors/" + sensor.id + "/");
             try {
-                api.sendPost(data, "/fires/");
+                api.sendPost(data, "http://192.168.0.10:8000/fires/");
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
         }
     }
     public static void main(String[] args) {
@@ -114,7 +136,7 @@ public class Main {
         TimerTask createFires = new CreateFiresTask();
         TimerTask updateFires = new UpdateFiresTask();
         //tim.scheduleAtFixedRate(moveTrucks, 0, 1000);
-        tim.scheduleAtFixedRate(createFires, 0, 10000);
+        //tim.scheduleAtFixedRate(createFires, 0, 10000);
         tim.scheduleAtFixedRate(updateFires, 0, 1000);
 
         try {
