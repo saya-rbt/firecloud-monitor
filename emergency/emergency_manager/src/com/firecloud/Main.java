@@ -23,6 +23,62 @@ public class Main {
         }
 
         private void completeTask() {
+            ApiHelper api = new ApiHelper();
+            String jsonFires = "";
+            String jsonTrucks = "";
+            try {
+                jsonFires = api.sendGet("http://192.168.0.10:8001/fires/active/");
+                jsonTrucks = api.sendGet("http://192.168.0.10:8001/trucks/available/");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            Gson myGson = new Gson();
+            Type empMapType = new TypeToken<ArrayList<Fire>>() {}.getType();
+            ArrayList<Fire> fires = myGson.fromJson(jsonFires, empMapType);
+
+            empMapType = new TypeToken<ArrayList<Truck>>() {}.getType();
+            ArrayList<Truck> trucks = myGson.fromJson(jsonTrucks, empMapType);
+            ArrayList<Truck> selectedTrucks = new ArrayList<>();
+            ArrayList<Truck> remainingTrucks = new ArrayList<>(trucks);
+            for (Fire fire : fires) {
+                int strength = fire.intensity;
+                for (Truck truck : trucks){
+                    if(truck.strength >= strength && remainingTrucks.contains(truck)){
+                        truck.fireId = fire.id;
+                        selectedTrucks.add(truck);
+                        remainingTrucks.remove((truck));
+                        break;
+                    }
+                    else if (truck.strength < strength && remainingTrucks.contains(truck)){
+                        truck.fireId = fire.id;
+                        strength -= truck.strength;
+                        selectedTrucks.add(truck);
+                        remainingTrucks.remove((truck));
+                    }
+
+                    if(strength <= 0){
+                        break;
+                    }
+                }
+            }
+            System.out.print(selectedTrucks.size());
+            for(Truck truck : selectedTrucks){
+                Map<Object, Object> data = new HashMap<>();
+                data.put("name", truck.name);
+                data.put("strength", truck.strength);
+                data.put("latitude", truck.latitude);
+                data.put("longitude", truck.longitude);
+                data.put("station", truck.station);
+                data.put("fire", "http://192.168.0.10:8001/fires/" + truck.fireId + "/");
+
+                try {
+                    api.sendPut(data, "http://192.168.0.10:8001/trucks/" + truck.id + "/");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
             try {
                 //assuming it takes 20 secs to complete the task
                 Thread.sleep(1000);
@@ -57,70 +113,18 @@ public class Main {
             }
         }
     }
-    static public class CreateFiresTask extends TimerTask {
-
-        @Override
-        public void run() {
-            System.out.println("Fire Created task started at:" + new Date());
-            completeTask();
-            System.out.println("Fire Created task finished at:" + new Date());
-        }
-
-        private void completeTask() {
-            ApiHelper api = new ApiHelper();
-            String json = "";
-            try {
-                json = api.sendGet("/sensors/inactive_sensors/");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            Gson myGson = new Gson();
-            Type empMapType = new TypeToken<Sensor[]>() {}.getType();
-            Sensor[] sensors = myGson.fromJson(json, empMapType);
-            if(sensors.length == 0)
-                return;
-
-            for (Sensor value : sensors) {
-                System.out.print(value.id + " "
-                        + value.posx + " "
-                        + value.posy + " "
-                        + value.latitude + " "
-                        + value.longitude + " ");
-                System.out.print("\n");
-            }
-
-            Random rand = new Random();
-            Sensor sensor = sensors[rand.nextInt(((sensors.length - 1)) + 1)];
-            Map<Object, Object> data = new HashMap<>();
-            data.put("latitude", sensor.latitude);
-            data.put("longitude", sensor.longitude);
-            data.put("intensity", rand.nextInt((10 - 1) + 1) + 1);
-            data.put("radius", "0");
-            data.put("sensor", "/sensors/" + sensor.id + "/");
-            try {
-                api.sendPost(data, "/fires/");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-        }
-    }
     public static void main(String[] args) {
         System.out.print("Hello World !");
 
         Timer tim = new Timer();
         TimerTask assignTrucks = new AssignTrucksTask();
-        TimerTask createFires = new CreateFiresTask();
-        TimerTask updateFires = new UpdateFiresTask();
-        //tim.scheduleAtFixedRate(AssignTrucks, 0, 1000);
-        tim.scheduleAtFixedRate(createFires, 0, 10000);
-        tim.scheduleAtFixedRate(updateFires, 0, 1000);
+        //TimerTask createFires = new CreateFiresTask();
+        //TimerTask updateFires = new UpdateFiresTask();
+        tim.scheduleAtFixedRate(assignTrucks, 0, 5000);
+        //tim.scheduleAtFixedRate(createFires, 0, 10000);
+        //tim.scheduleAtFixedRate(updateFires, 0, 1000);
+        while(true){
 
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
         //tim.cancel();
     }
