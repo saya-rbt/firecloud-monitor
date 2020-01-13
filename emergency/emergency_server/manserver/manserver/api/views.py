@@ -47,7 +47,7 @@ class TruckViewSet(viewsets.ModelViewSet):
     serializer_class = TruckSerializer
     @action(detail=False)
     def available(self, request):
-        available_trucks = Truck.objects.filter(fire__isnull=True).order_by('strength')
+        available_trucks = Truck.objects.filter(fire__isnull=True).order_by('-strength')
         serializer = self.get_serializer(available_trucks, many=True)
         return Response(serializer.data)
 
@@ -74,6 +74,6 @@ class FireViewSet(viewsets.ModelViewSet):
 
     @action(detail=False)
     def active(self, request):
-        active_fires = Fire.objects.filter(intensity__gt=0).order_by('intensity')
+        active_fires = Fire.objects.filter(intensity__gt=0).order_by('-intensity')
         serializer = self.get_serializer(active_fires, many=True)
         return Response(serializer.data)

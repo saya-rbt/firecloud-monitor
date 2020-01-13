@@ -14,12 +14,13 @@ public class Fire extends Entity {
      */
 
     int intensity;
-    int sensorId;
+    String sensor;
     int intervention_strength;
-
-    public Fire(int pIntensity, int pSensor, float pLongitude, float pLatitude){
+    int pending_strength;
+    int radius;
+    public Fire(int pIntensity, String pSensor, float pLongitude, float pLatitude){
         intensity = pIntensity;
-        sensorId = pSensor;
+        sensor = pSensor;
         longitude = pLongitude;
         latitude = pLatitude;
     }

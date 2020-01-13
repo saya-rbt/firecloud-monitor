@@ -43,6 +43,8 @@ public class Main {
             ArrayList<Truck> remainingTrucks = new ArrayList<>(trucks);
             for (Fire fire : fires) {
                 int strength = fire.intensity;
+                if(fire.pending_strength + fire.intervention_strength > strength)
+                    break;
                 for (Truck truck : trucks){
                     if(truck.strength >= strength && remainingTrucks.contains(truck)){
                         truck.fireId = fire.id;
