@@ -18,7 +18,7 @@ class Sensor(models.Model):
         unique_together = ('posx', 'posy')
 
     def __str__(self):
-        return '(%d)' % (self.posx, self.posy)
+        return '(%d, %d)' % (self.posx, self.posy)
 
 class Fire(models.Model):
     latitude = models.FloatField()
