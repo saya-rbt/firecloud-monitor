@@ -6,13 +6,18 @@
 import nacl.utils
 import nacl.secret
 from nacl.encoding import Base64Encoder
-from nacl.public import PrivateKey, Box
+from nacl.public import PrivateKey, Box, PublicKey
 
 # Serial
 import serial
 
 # Other
 import binascii
+import datetime
+import time
+
+# Servers
+import requests
 
 ## Variables
 # Microcontroller variables
@@ -23,6 +28,13 @@ SERIALPORT = "/dev/ttyUSB0"
 # SERIALPORT = "/dev/tty.usbserial-DA00G4XZ"
 BAUDRATE = 115200
 ser = serial.Serial()
+
+# Servers variables
+serv_address = "http://192.168.0.10"
+serv_port = 8000
+
+# Timezone offset
+tz_offset = 1
 
 # Encryption variables
 # Keyfiles folder
@@ -125,6 +137,8 @@ if __name__ == "__main__":
 	# Initiating the UART
 	initUART()
 
+	last_checked = datetime.datetime.now()
+
 	# Initiating connection with the data collect platform
 	if not init_connection(DATA_COLLECT_DEST_ADDR, ser):
 		print("Could not establish collection: no keyfile!")
@@ -136,59 +150,78 @@ if __name__ == "__main__":
 			# We use this for tests before hooking it to the API
 			sending = False
 			while data != "stop it":
+				to_send = []
 				if not sending:
-					print("TODO: Get the data from the API instead")
-					data = input("Message? ")
-					sending = True
+					# print("TODO: Get the data from the API instead")
+					print("Getting data from the API...")
+					fires_request = requests.get(serv_address + ":" + str(serv_port) + "/fires")
+					fires = fires_request.json()
+					# print(fires)
+					if not fires:
+						print("No data. Continuing.")
+					for fire in fires:
+						fire_update_date = datetime.datetime.strptime(fire["updated"],"%Y-%m-%dT%H:%M:%S.%fZ") + datetime.timedelta(hours = tz_offset)
+						if fire_update_date > last_checked:
+							sensor_request = requests.get(fire["sensor"])
+							sensor = sensor_request.json()
+							data = "(" + str(sensor["posx"]) + "," + str(sensor["posy"]) + "," + str(fire["intensity"]) + ")"
+							to_send.append(data)
+							sending = True
+						else:
+							continue
+					if not to_send:
+						print("No new data. Continuing.")
+					last_checked = datetime.datetime.now()
 				
 				if sending:
-					# Encrypting the message
-					print("Encrypting " + data + "...")
-					encrypted = sbox.encrypt(data.encode())
-					encmsg = DATA_COLLECT_DEST_ADDR + message_types["DATA"] + encrypted
-					
-					# Sending the message through the UART
-					print("Sending " + data + "...")
-					ser.write(encmsg)
-					print("Sent!")
+					for data in to_send:
+						# Encrypting the message
+						print("Encrypting " + data + "...")
+						encrypted = sbox.encrypt(data.encode())
+						encmsg = DATA_COLLECT_DEST_ADDR + message_types["DATA"] + encrypted
+						
+						# Sending the message through the UART
+						print("Sending " + data + "...")
+						ser.write(encmsg)
+						print("Sent!")
 
-					# Waiting for a response from the data collect platform
-					print("Waiting for a response...")
-					ans = ser.read(53)
-					if len(ans) != 53:
-						print("ERROR: response timeout! Skipping.")
-						sending = False
-						continue
-					else:
-						source_addr = bytes([ans[0]])
-						source_cksm = bytes([ans[2]])
-						source_flag = bytes([ans[4]])
-						source_data = ans[6:]
-
-						# If we receive a NACK, we resend the message until we get an
-						# ACK response
-						while source_flag == message_types["NACK"]:
-							print("NACK received. Resending " + data + "...")
-							ser.write(encmsg)
-							print("Resent!")
-							print("Waiting again for ACK...")
-							encresponse = ser.read(53)
-							if len(encresponse) != 53:
-								print("ERROR : response timeout!")
-								sending = True
-								continue
-
-						# If we get an ACK, it's all good
-						if source_flag == message_types["ACK"]:
-							print("ACK received!")
+						# Waiting for a response from the data collect platform
+						print("Waiting for a response...")
+						ans = ser.read(53)
+						if len(ans) != 53:
+							print("ERROR: response timeout! Skipping.")
 							sending = False
 							continue
-						# Any other response will print an error
 						else:
-							print("ERROR: wrong response!")
-							sending = False
-							continue
+							source_addr = bytes([ans[0]])
+							source_cksm = bytes([ans[2]])
+							source_flag = bytes([ans[4]])
+							source_data = ans[6:]
 
+							# If we receive a NACK, we resend the message until we get an
+							# ACK response
+							while source_flag == message_types["NACK"]:
+								print("NACK received. Resending " + data + "...")
+								ser.write(encmsg)
+								print("Resent!")
+								print("Waiting again for ACK...")
+								encresponse = ser.read(53)
+								if len(encresponse) != 53:
+									print("ERROR : response timeout!")
+									sending = True
+									continue
+
+							# If we get an ACK, it's all good
+							if source_flag == message_types["ACK"]:
+								print("ACK received!")
+								sending = False
+								continue
+							# Any other response will print an error
+							else:
+								print("ERROR: wrong response!")
+								sending = False
+								continue
+				time.sleep(5)
 		# If the connection fails, we stop.
 		else:
 			print("Stopped: couldn't establish a SecretBox.")
