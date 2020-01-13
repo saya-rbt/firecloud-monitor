@@ -18,7 +18,7 @@ class Sensor(models.Model):
         unique_together = ('posx', 'posy')
 
     def __str__(self):
-        return '(%d,%d)' % (self.posx, self.posy)
+        return '(%d)' % (self.posx, self.posy)
 
 class Fire(models.Model):
     latitude = models.FloatField()
@@ -35,4 +35,4 @@ class Truck(models.Model):
     longitude = models.FloatField()
     strength = models.IntegerField()
     station = models.ForeignKey(Station, related_name='trucks', on_delete=models.CASCADE)
-    fires = models.ManyToManyField(Fire)
+    fire = models.ForeignKey(Fire, related_name='trucks', on_delete=models.CASCADE)

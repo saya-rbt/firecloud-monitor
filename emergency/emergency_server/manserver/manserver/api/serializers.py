@@ -23,7 +23,7 @@ class TruckSerializer(serializers.HyperlinkedModelSerializer):
     #station = StationSerializer(read_only=True)
     class Meta:
         model = Truck
-        fields = ['id', 'latitude', 'longitude', 'strength', 'station']
+        fields = ['id', 'latitude', 'longitude', 'strength', 'station', 'fire']
 
 class SensorSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -34,4 +34,4 @@ class FireSerializer(serializers.HyperlinkedModelSerializer):
     #sensor = SensorSerializer(read_only=True)
     class Meta:
         model = Fire
-        fields = ['id', 'latitude', 'longitude', 'intensity', 'radius', 'created', 'updated', 'sensor']
+        fields = ['id', 'latitude', 'longitude', 'intensity', 'radius', 'created', 'updated', 'sensor', 'trucks']
