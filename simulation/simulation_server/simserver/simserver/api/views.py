@@ -7,14 +7,6 @@ from rest_framework.response import Response
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 
-class FireFilter(django_filters.rest_framework.FilterSet):
-    class Meta:
-        model = User
-        fields = {
-            'sensor__posx': ['exact'],
-            'sensor__poxy': ['exact'],
-        }
-
 class UserViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows users to be viewed or edited.
@@ -68,7 +60,7 @@ class FireViewSet(viewsets.ModelViewSet):
     queryset = Fire.objects.all()
     serializer_class = FireSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_class = FireFilter
+    search_fields = ['sensor__posx', 'sensor__poxy']
 
     @action(detail=False)
     def active(self, request):
