@@ -35,4 +35,4 @@ class Truck(models.Model):
     longitude = models.FloatField()
     strength = models.IntegerField()
     station = models.ForeignKey(Station, related_name='trucks', on_delete=models.CASCADE)
-    fire = models.ForeignKey(Fire, related_name='trucks', on_delete=models.CASCADE, null=False, blank=True )
+    fire = models.ForeignKey(Fire, related_name='trucks', on_delete=models.CASCADE, null=True, blank=True )
