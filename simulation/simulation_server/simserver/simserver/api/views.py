@@ -41,10 +41,17 @@ class SensorViewSet(viewsets.ModelViewSet):
     serializer_class = SensorSerializer
 
     @action(detail=False)
-    def inactive_sensors(self, request):
+    def inactive(self, request):
         inactive_sensors = Sensor.objects.filter(Q(fires__isnull=True) | Q(fires__intensity=0)).distinct()
         serializer = self.get_serializer(inactive_sensors, many=True)
         return Response(serializer.data)
+
+    @action(detail=False)
+    def active(self, request):
+        active_sensors = Sensor.objects.filter(fires__intensity__gt=0).distinct()
+        serializer = self.get_serializer(active_sensors, many=True)
+        return Response(serializer.data)
+
 
 class FireViewSet(viewsets.ModelViewSet):
     """
@@ -54,7 +61,7 @@ class FireViewSet(viewsets.ModelViewSet):
     serializer_class = FireSerializer
 
     @action(detail=False)
-    def active_fires(self, request):
-        active_fires = Fire.objects.filter(intensity__gt=0)
+    def active(self, request):
+        active_fires = Fire.objects.filter(intensity__gt=0).order_by('intensity')
         serializer = self.get_serializer(active_fires, many=True)
         return Response(serializer.data)

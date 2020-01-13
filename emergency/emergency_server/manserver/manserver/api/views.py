@@ -71,3 +71,9 @@ class FireViewSet(viewsets.ModelViewSet):
     """
     queryset = Fire.objects.all()
     serializer_class = FireSerializer
+
+    @action(detail=False)
+    def active(self, request):
+        active_fires = Fire.objects.filter(intensity__gt=0).order_by('intensity')
+        serializer = self.get_serializer(active_fires, many=True)
+        return Response(serializer.data)
