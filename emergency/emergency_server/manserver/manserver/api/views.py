@@ -4,6 +4,7 @@ from rest_framework import viewsets
 from manserver.api.serializers import *
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -71,6 +72,8 @@ class FireViewSet(viewsets.ModelViewSet):
     """
     queryset = Fire.objects.all()
     serializer_class = FireSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['posx', 'poxy']
 
     @action(detail=False)
     def active(self, request):
