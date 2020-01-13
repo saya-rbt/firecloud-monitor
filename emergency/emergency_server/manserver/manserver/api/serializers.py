@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User, Group
 from manserver.api.models import *
 from rest_framework import serializers
+from django.db.models import Sum
 
 class GroupSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -29,9 +30,14 @@ class SensorSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Sensor
         fields = ['id', 'posx', 'posy', 'latitude', 'longitude', 'fires']
+        depth=1
 
 class FireSerializer(serializers.HyperlinkedModelSerializer):
     #sensor = SensorSerializer(read_only=True)
+    intervention_strength = serializers.SerializerMethodField()
     class Meta:
         model = Fire
-        fields = ['id', 'latitude', 'longitude', 'intensity', 'radius', 'created', 'updated', 'sensor', 'trucks']
+        fields = ['id', 'latitude', 'longitude', 'intensity', 'radius', 'created', 'updated', 'sensor', 'trucks', 'intervention_strength']
+
+    def get_intervention_strength(self, obj):
+        return Truck.objects.filter(fire__id=obj.id).aggregate(Sum('strength'))
