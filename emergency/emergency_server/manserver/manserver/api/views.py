@@ -72,8 +72,6 @@ class FireViewSet(viewsets.ModelViewSet):
     """
     queryset = Fire.objects.all()
     serializer_class = FireSerializer
-    filter_backends = [DjangoFilterBackend]
-    search_fields = ['sensor__posx', 'sensor__poxy']
 
     @action(detail=False)
     def active(self, request):
