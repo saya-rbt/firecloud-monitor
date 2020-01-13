@@ -15,6 +15,7 @@ import serial
 import binascii
 import datetime
 import time
+import json
 
 # Servers
 import requests
@@ -159,7 +160,7 @@ if __name__ == "__main__":
 					print("Sending to the server... [TODO]")
 
 					print("Getting the fire we need...")
-					sensors_req = requests.get(serv_address + ":" + str(serv_port) + "/sensors")
+					sensors_req = requests.get(serv_address + ":" + str(serv_port) + "/sensors/")
 					sensors = sensors_req.json()
 					# print(sensors)
 					# for sensor in sensors:
@@ -171,23 +172,28 @@ if __name__ == "__main__":
 					# 		print(sensor["id"])
 					sensor_id = [sensor["id"] for sensor in sensors if sensor["posx"] == int(data_split[0]) and sensor["posy"] == int(data_split[1])][0]
 					# print(sensor_id)
-					fire = [sensor for sensor in sensors if sensor["id"] == sensor_id][0]["fires"][0]
-					# print(fire)
-					# for key, value in fire.items():
-					# 	if key == "intensity":
-					# 		fire[key] = int(data_split(2))
-					# print(type(fire))
-					# print(fire["intensity"])
-					# print(type(fire["intensity"]))
-					fire["intensity"] = int(data_split[2])
-					to_update = fire["url"]
-					# print(to_update)
-					payload = fire
-					# print(payload)
-					print("Updating the fire...")
-					update_req = requests.put(to_update, data=payload)
-					print("Request sent! Code: " + str(update_req.status_code))
-					# print(update_req.status_code)
+					sensor = [sensor for sensor in sensors if sensor["id"] == sensor_id][0]
+					fire = sensor["fires"]
+					if not fire:
+						fire = {"latitude": sensor["latitude"], "longitude": sensor["longitude"], "intensity": int(data_split[2]), "radius": 0.0, "sensor": serv_address + ":" + str(serv_port) + "/sensors/" + str(sensor["id"]) + "/", "trucks": []}
+						to_post_to = serv_address + ":" + str(serv_port) + "/fires/"
+						print(to_post_to)
+						fire = json.dumps(fire).replace("'",'"')
+						print(fire)
+						print("Posting the fire...")
+						post_req = requests.post(to_post_to, json = json.loads(fire))
+						print("Request sent! Code: " + str(post_req.status_code))
+					else:
+						fire = fire[0]
+						fire["intensity"] = int(data_split[2])
+						to_update = fire["url"]
+						# print(to_update)
+						payload = fire
+						# print(payload)
+						print("Updating the fire...")
+						update_req = requests.put(to_update, data=payload)
+						print("Request sent! Code: " + str(update_req.status_code))
+						# print(update_req.status_code)
 
 					print("Sending to the MQTT...")
 					mqtt_msg = "intensite,capteur=capteur" + data_split[1] + data_split[0] + " valeur=" + data_split[2]
