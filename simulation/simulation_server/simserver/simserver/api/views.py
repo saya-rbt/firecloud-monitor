@@ -52,6 +52,13 @@ class SensorViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(active_sensors, many=True)
         return Response(serializer.data)
 
+    @action(detail=False)
+    def filter(self, request):
+        print(request.query_params)
+        sensor = Sensor.objects.filter(posx=request.query_params.get('posx'), posy=request.query_params.get('posx'))
+        serializer = self.get_serializer(sensor, many=True)
+        return Response(serializer.data)
+
 
 class FireViewSet(viewsets.ModelViewSet):
     """
@@ -59,11 +66,16 @@ class FireViewSet(viewsets.ModelViewSet):
     """
     queryset = Fire.objects.all()
     serializer_class = FireSerializer
-    filter_backends = [DjangoFilterBackend]
-    search_fields = ['sensor__posx', 'sensor__poxy']
 
     @action(detail=False)
     def active(self, request):
         active_fires = Fire.objects.filter(intensity__gt=0).order_by('-intensity')
         serializer = self.get_serializer(active_fires, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False)
+    def filter(self, request):
+        print(request.query_params)
+        sensor = Fire.objects.filter(sensor__posx=request.query_params.get('posx'), sensor__posy=request.query_params.get('posx'))
+        serializer = self.get_serializer(sensor, many=True)
         return Response(serializer.data)

@@ -65,6 +65,13 @@ class SensorViewSet(viewsets.ModelViewSet):
         active_sensors = Sensor.objects.filter(fires__intensity__gt=0).distinct()
         serializer = self.get_serializer(active_sensors, many=True)
         return Response(serializer.data)
+        
+    @action(detail=False)
+    def filter(self, request):
+        print(request.query_params)
+        sensor = Sensor.objects.filter(posx=request.query_params.get('posx'), posy=request.query_params.get('posx'))
+        serializer = self.get_serializer(sensor, many=True)
+        return Response(serializer.data)
 
 class FireViewSet(viewsets.ModelViewSet):
     """

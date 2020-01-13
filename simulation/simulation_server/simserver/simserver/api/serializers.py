@@ -20,7 +20,7 @@ class SensorSerializer(serializers.HyperlinkedModelSerializer):
         depth = 1
 
 class FireSerializer(serializers.HyperlinkedModelSerializer):
-    #sensor = SensorSerializer(read_only=True)
+    sensor = SensorSerializer(read_only=True)
     class Meta:
         model = Fire
         fields = ['id', 'latitude', 'longitude', 'intensity', 'radius', 'created', 'updated', 'sensor']
