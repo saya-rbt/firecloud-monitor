@@ -155,7 +155,9 @@ if __name__ == "__main__":
 					# print("TODO: Get the data from the API instead")
 					print("Getting data from the API...")
 					fires_request = requests.get(serv_address + ":" + str(serv_port) + "/fires")
+					# print(fires_request)
 					fires = fires_request.json()
+					# print(fires)
 					# print(fires)
 					if not fires:
 						print("No data. Continuing.")
