@@ -43,5 +43,5 @@ class FireSerializer(serializers.HyperlinkedModelSerializer):
     def get_intervention_strength(self, obj):
         return Truck.objects.filter(fire__id=obj.id, latitude=obj.latitude, longitude=obj.latitude).aggregate(Sum('strength')).get('strength__sum')
     def get_pending_strength(self, obj):
-        return Truck.objects.filter(fire__id=obj.id, latitude__ne=obj.latitude, longitude__ne=obj.latitude).aggregate(Sum('strength')).get('strength__sum')
+        return Truck.objects.filter(fire__id=obj.id).exclude(latitude=obj.latitude, longitude=obj.latitude).aggregate(Sum('strength')).get('strength__sum')
         
