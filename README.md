@@ -40,8 +40,8 @@ The IoT protocol is based on UDP, though it's been slightly modified to handle a
 | Byte |   0    |      1       |
 |:----:|:------:|:------------:|
 |  0   | Length | Destination  |
-|  2   | Source | Message type |
-| 4-62 |  Data  | Data (cont.) |
+|  2   | Source | Checksum     |
+| 4-62 |  Flag  | Data         |
 
 And here is the table of the current message types (can be expanded later):
 
