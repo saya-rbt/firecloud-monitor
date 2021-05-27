@@ -67,7 +67,7 @@ And here is the table of the current message types (can be expanded later):
 
 |                  Member                   |                                    Role                                     |
 |:-----------------------------------------:|:---------------------------------------------------------------------------:|
-| [@sayabiws](https://github.com/sayabiws/) |             IoT (RF-Sub1GHz), Dashboard (InfluxDB, Grafana...)              |
+| [@saya-rbt](https://github.com/saya-rbt/) |             IoT (RF-Sub1GHz), Dashboard (InfluxDB, Grafana...)              |
 | [@SirLewis](https://github.com/SirLewis)  | Django web servers and APIs, PostgreSQL DB, Simulator and Emergency Manager |
 |   [@empyrz](https://github.com/empyrz)    |                    Servers, Docker, Dashboard, Big Data                     |
 | [@LucasCPE](https://github.com/LucasCPE)  |                          Network, servers, Docker                           |
